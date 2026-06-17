@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KayHomes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Cormorant+SC:wght@300;400;500;600;700&family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon_io/favicon.ico" sizes="16x16" type="image/png">
+	<link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
+	<link rel="manifest" href="favicon_io/site.webmanifest">
+    
+ 
+</head>
+ <body>  
+   <nav class="navbar bg-body-tertiary fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Offcanvas navbar</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Offcanvas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('properties') }}">Properties</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('property_details') }}">Add property</a>
+          </li>
+          <div class="dropdown">
+                <a class="btn btn-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Categories
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Duplex</a></li>
+                    <li><a class="dropdown-item" href="#">Flat/Apartment</a></li>
+                    <li><a class="dropdown-item" href="#">Mini Flat</a></li>
+                    <li><a class="dropdown-item" href="#">self Contain</a></li>
+                    <li><a class="dropdown-item" href="#">Bungalow</a></li>
+                    <li><a class="dropdown-item" href="#">Studio Apartment</a></li>
+                    <li><a class="dropdown-item" href="#">Land</a></li>
+                    <li><a class="dropdown-item" href="#">Office Space</a></li>
+                    <li><a class="dropdown-item" href="#">Shop</a></li>
+                </ul>
+            </div>
+
+         	<div class="col-md-6">
+			    <label for="inputState" class="form-label">State</label>
+			    <select id="inputState" class="form-select w-100">
+			      <option>Select a State </option>
+			       <option value="Abuja"> Abuja </option>
+			       <option value="Abia"> Abia </option>
+			       <option value="Adamawa">Adamawa </option>
+			       <option value="Akwa Ibom">Akwa Ibom </option>
+			       <option value="Anambra">Anambra </option>
+			       <option value="Bauchi">Bauchi </option>
+			       <option value="Bayelsa">Bayelsa </option>
+			       <option value="Benue">Benue</option>
+			       <option value="Cross River">Cross River</option>
+			       <option value="Delta">Delta</option>
+			       <option value="Ebonyi">Ebonyi</option>
+			       <option value="Edo">Edo</option>
+			       <option value="Enugu">Enugu</option>
+			       <option value="Gombe">Gombe</option>
+			       <option value="Imo">Imo</option>
+			       <option value="Jigawa">Jigawa</option>
+			       <option value="Kaduna">Kaduna</option>
+			       <option value="Kano">Kano</option>
+			       <option value="Katsina">Katsina</option>
+			       <option value="Kogi">Kogi</option>
+			       <option value="Kwara">Kwara</option>
+			       <option value="Lagos">Lagos</option>
+			       <option value="Nassarawa">Nassarawa</option>
+			       <option value="Niger">Niger</option>
+			       <option value="Kaduna">Kaduna</option>
+			       <option value="Ondo">Ondo</option>
+			       <option value="Osun">Osun</option>
+			       <option value="Oyo">Oyo</option>
+			       <option value="Plateau">Plateau</option>
+			       <option value="Rivers">Rivers</option>
+			       <option value="Sokoto">Sokoto</option>
+			       <option value="Taraba">Taraba</option>
+			       <option value="Yobe">Yobe</option>
+			       <option value="Zamfara">Zamfara</option>
+			    </select>
+			</div>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">LGA</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Users</a>
+          </li>
+        </ul>
+         <button type="submit" class="btn btn-danger w-100">Login Out</button>
+
+        <form class="d-flex mt-3" role="search">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</nav>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<!-- sidebar -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
+    <div class="offcanvas-header">
+        <h5>Menu</h5>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body">
+        <ul class="list-group">
+            <li class="list-group-item">Dashboard</li>
+            <li class="list-group-item">Properties</li>
+            <li class="list-group-item">Add property</li>
+            <li class="list-group-item">Categories</li>
+            <li class="list-group-item">States</li>
+            <li class="list-group-item">LGA</li>
+            <li class="list-group-item">Users</li>
+            <li class="list-group-item">Logout</li>
+        </ul>
+    </div>
+</div>
+
+<!-- main content area -->
+ <div class="container mt-4">
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card card-box p-3 shadow">
+                <h5>Total Properties</h5>
+                <h2>120</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card card-box p-3 shadow">
+                <h5>Available</h5>
+                <h2>85</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card card-box p-3 shadow">
+                <h5>Users</h5>
+                <h2>56</h2>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card card-box p-3 shadow">
+                <h5>Favourites</h5>
+                <h2>33</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- property table -->
+     <div class="card mt-4 shadow">
+        <div class="card-header bg-dark text-white">
+            Property Listings
+        </div>
+
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Property</th>
+                        <th>State</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>001</td>
+                        <td>4 Bedroom Duplex</td>
+                        <td>Lagos</td>
+                        <td>Rent</td>
+                        <td>N50M</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm">Edit</button>
+                            <button class="btn btn-danger btn-sm">Delete</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>002</td>
+                        <td>Mini Flat</td>
+                        <td>Abuja</td>
+                        <td>Rent</td>
+                        <td>N1.2M</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm">Edit</button>
+                            <button class="btn btn-danger btn-sm">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+     </div>
+ </div>
+<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+<hr>
+<!--footer section-->
+    <footer class="kay-footer bg-dark-blue text-white py-5"> 
+        <div class="container">
+            <div class="row g-4">
+                <div class="footer-container">
+                    <!--column 1 properties for rent-->
+                    <div class="footer-colmn">
+                        <h3>Properties For Rent</h3>
+                            <ul>
+                                <li><a href="#">commercial properties for rent</a></li>
+                                <li><a href="#">flats & apartments for rent </a></li>
+                                <li><a href="#">house for rent</a></li>
+                                <li><a href="#">mini flat for rent </a></li>
+                                <li><a href="#">self contains for rent </a></li>
+                                <li><a href="#">studio apartment for rent </a></li>
+                            </ul>
+                    </div>
+                    <!--column 2  short lets & long term-->
+                    <div class="footer-colmn">
+                        <h3> Short lets</h3>
+                            <ul>
+                                <li><a href="#">short lets in lagos</a></li>
+                                <li><a href="#">short lets in abuja </a></li>
+                                <li><a href="#">short lets in lekki</a></li>
+                                <li><a href="#">short lets in victoria island </a></li>
+                                <li><a href="#">short lets in ikoyi</a></li>
+                                <li><a href="#">short lets in epe</a></li>
+                            </ul>
+
+                            <h3 class="section-spacing"> rental features</h3>
+                            <ul>
+                                <li><a href="#">serviced properties for rent </a></li>
+                                <li><a href="#">furnished properties for rent </a></li>
+                                <li><a href="#">newly built properties for rent </a></li> 
+                            </ul>
+                    </div>
+
+                    <!--column 3 popular rental locations-->
+                    <div class="footer-colmn">
+                        <h3>Popular estates</h3>
+                            <ul>
+                                <li><a href="#">parkview estate, ikoyi</a></li>
+                                <li><a href="#">orchid estate, lekki</a></li>
+                                <li><a href="#">mojisola onikoyi estate</a></li>
+                                <li><a href="#">magodo gra phase 2</a></li>
+                                <li><a href="#">omole estate phase 1 </a></li>
+                                <li><a href="#">victoria garden city estate</a></li>
+                            </ul>
+                    </div>
+
+                    <!--column 4 rental agents & resources-->
+                    <div class="footer-colmn">
+                        <h3> Rental Agents</h3>
+                            <ul>
+                                <li><a href="#">leasing agents in lagos</a></li>
+                                <li><a href="#">leasing agents in abuja</a></li>
+                                <li><a href="#">leasing agents in other states</a></li>
+                            </ul>
+
+                            <h3 class="section-spacing">tenants tools </h3>
+                            <ul>
+                                <li><a href="#">Neighborhood Guide</a></li>
+                                <li><a href="#">MoveMe (relocation help)</a></li>
+                                <li><a href="#">tenant rights & policy</a></li>
+                            </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <button class="btn btn-scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'});" arial-label=""back to top>
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="80" fill="currentColor" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707z"/>
+    </svg>
+    </button>
+
+</body>
+</html>

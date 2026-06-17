@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KayHomes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Cormorant+SC:wght@300;400;500;600;700&family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="icon" href="favicon_io/favicon.ico" sizes="16x16" type="image/png">
+	<link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
+	<link rel="manifest" href="favicon_io/site.webmanifest">
+    
+ 
+</head>
+ <body> 
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+      <div class="container-fluid px-4">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="KayHomes logo" class="d-inline-block align-text-top navbar-logo">
+          <span class="fw-bold text-primary fs-5"></span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center">
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('properties') }}">Properties</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('about') }}">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Dashboard
+              </a>
+              <ul class="dropdown-menu shadow-sm">
+                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">User Dashboard</a></li>
+                <li><a class="dropdown-item" href="#">My Favorites</a></li>
+                <li><a class="dropdown-item" href="#">Saved Search</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('user') }}">Account Settings</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{{ url_for('login') }}">Sign Out</a></li>
+              </ul>
+            </li>
+          </ul>
+
+          <form class="d-flex ms-lg-4 mt-3 mt-lg-0" role="search">
+            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
+            <button class="btn btn-success" type="submit">Search</button>
+          </form>
+
+          <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
+            <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
+            <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+     
+     <nav class="navbar navbar-dark bg-dark sticky-top navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('home') }}">KAYHOMES</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <span class="navbar-text me-3 text-white">Welcome, User</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN LAYOUT WRAPPER -->
+  <div class="container-fluid">
+    <div class="row">
+      
+      <!-- SIDEBAR NAVIGATION -->
+       <nav class="navbar bg-body-tertiary fixed-top">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">Dashboard</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+            <div class="offcanvas-header">
+              <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Offcanvas</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+              <ul class="nav flex-column">
+                  <li class="nav-item">
+                    <a class="nav-link active" href="{{ url_for('dashboard') }}">
+                      My Properties
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#">
+                      Saved Properties
+                    </a>
+                  </li>
+
+                  
+                  <li class="nav-item">
+                    <a class="nav-link" href="#">
+                      Messages <span class="badge bg-primary rounded-pill float-end">3</span>
+                    </a>
+                  </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link" href="#">
+                      Profile Settings
+                    </a>
+                  </li>
+
+                  <li class="nav-item mt-4">
+                    <hr class="border-secondary">
+                    <a class="nav-link text-danger" href="{{ url_for('home') }}">
+                      Logout
+                    </a>
+                  </li>
+                </ul>
+
+              <form class="d-flex mt-3" role="search">
+                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
+                <button class="btn btn-outline-success" type="submit">Search</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <!-- MAIN CONTENT HERE -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+        
+        <!-- Dashboard Header -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom border-secondary">
+          <h2>User Dashboard</h2>
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('properties') }}" class="btn btn-sm btn-success">
+              + Add New Property
+            </a>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="row mb-4">
+          <div class="col-md-4 mb-3">
+            <div class="card card-custom p-3 shadow-sm">
+              <div class="text-muted-custom small text-uppercase">Listed Properties</div>
+              <div class="fs-3 fw-bold">4</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card card-custom p-3 shadow-sm">
+              <div class="text-muted-custom small text-uppercase">Saved Listings</div>
+              <div class="fs-3 fw-bold">12</div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card card-custom p-3 shadow-sm">
+              <div class="text-muted-custom small text-uppercase">Unread Inquiries</div>
+              <div class="fs-3 fw-bold">3</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- "My Properties" Interactive GUI Section -->
+        <h4 class="mb-3">My Properties</h4>
+        <div class="row">
+          
+          <!-- Property Grid Item Example -->
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card card-custom h-100 shadow-sm">
+              <img src="https://placeholder.com" class="card-img-top" alt="Property">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Modern 3 Bedroom Apartment</h5>
+                <p class="card-text text-muted-custom small flex-grow-1">Lagos, Nigeria • 3 Bed • 3 Bath • Parking Space</p>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                  <span class="text-success fw-bold">$250,000</span>
+                  <div>
+                    <button class="btn btn-sm btn-outline-light me-1">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--Property Visual -->
+          <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card card-custom h-100 d-flex align-items-center justify-content-center text-center border-dashed p-4">
+              <div class="my-5">
+                <p class="text-muted-custom">Have another unit ready to showcase?</p>
+                <a href="{{ url_for('property_details') }}" class="btn btn-outline-primary">List Property</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Bootstrap JavaScript Bundle Package -->
+  <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+<hr>
+
+<!-- footer section  -->
+
+<div class="bg-danger py-3 text-white">
+  <div class="container d-flex flex-column flex-md-row justify-content-between  align-items-center gap-3">
+    <h5 class="mb-0 fw-semibold text-center text-md-start fs-6">Are you in search of a property or an agent? List your property for FREE.</h5>
+    <a href="#" class="btn btn-outline-light px-4 py-2 fw-bold btn-sm">Register Now!</a>
+  </div>
+</div>
+
+<footer class="bg-light py-5 border-top ">
+    <div class="container">
+      <div class="row g-4">
+
+          <!-- About section footer -->
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small"> About Us</h6>
+            <p class="small text-muted th-base mb-3">
+              kayHomes is a leading property website in Nigeria with property listings for rent and leaase. KayHomes is a premier real estate and property platform providing modern housing solutions. <br>
+              We offer home seekers an easy way to find premium rental properties and modern apartments tailored
+              specifically for luxury and everyday comfort.
+            </p>
+            <a href="{{ url_for('about') }}" class="btn btn-danger btn-sm px-3 rounded-1 mb-4" style="font-size: 0.75rem;">Learn more</a>
+
+            <h6 class="text-uppercase fw-bold text-dark mb-2 small">Advertise With Us </h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Advertise Your Property</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Featured Real Estate companies</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Place Banner Adverts</a></li>
+            </ul>
+          </div>
+          
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3  small">Market Trends</h6>
+            <ul class="list-unstyled mb-4 small">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Property Demand Trends</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Average Propert Prices</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Popular Property</h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats for rent in Abuja</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent in Abuja</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for lease in Abuja</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Land for lease in Abuja</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Mini-flats for rent in Abuja</a></li>
+            </ul>
+          </div>  
+            
+          <div class="col-sm-12 col-md-3"> 
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Properties For Rent</h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Commercial properties for rent</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats & apartments for rent</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Mini flat for rent</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Self-contained for rent</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Studio apartments for rent</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Follow Us</h6>
+            <div class="d-flex gap-2 mb-4">
+              <a href="#"><img src="{{ url_for('static', filename='images/fb.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="facebook image icon"></a>
+              <a href="#"><img src="{{ url_for('static', filename='images/x.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="x image icon"></a>
+              <a href="#"><img src="{{ url_for('static', filename='images/tk.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="Tiktok image icon"></a>
+              <a href="#"><img src="{{ url_for('static', filename='images/yt.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="youtube image icon"></a>
+              <a href="#"><img src="{{ url_for('static', filename='images/in.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="linked-in image icon"></a>
+            </div>
+          </div>
+      
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Rental Agents</h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Lagos</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Abuja</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Leasing agents in other states</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm-12 col-md-3">
+            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Tenant tools</h6>
+            <ul class="list-unstyled small mb-0">
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Neighborhood Guide</a></li>
+              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">MoveMe (relocation help)</a></li>
+              <li><a href="#" class="text-muted text-decoration-none">Tenant rights & policy</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+      <hr>
+        <div class="text-center mt-4 text-muted">© 2026 KayHomes. All rights reserved.</div>
+</footer>
+
+    <button class="btn btn-scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'});" arial-label=""back to top>
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="80" fill="currentColor" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707z"/>
+    </svg>
+    </button>
+
+</body>
+</html>

@@ -58,15 +58,6 @@ def admin():
     return render_template('admin.html', title='Admin')
 
 
-@app.route('/testing/')
-def testing():
-    return render_template('testing.html', title='Testing')
-
-
-@app.route('/untitled')
-def untitled_one():
-    return render_template('Untitled-1.html', title='Untitled')
-
 
 @app.route('/logout/')
 def logout():

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat - {{ property['prop_title'] }}{% endblock %}
+
+{% block main_content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+              <h4 class="mb-1">{{ property['prop_title'] }}</h4>
+              <p class="mb-0 text-muted">Conversation with: {{ other_user['user_fname'] }} {{ other_user['user_lname'] }}</p>
+            </div>
+            <div class="text-end">
+              <small class="text-muted">{{ property['prop_location'] }}, {{ property['prop_state'] }}</small>
+            </div>
+          </div>
+
+          <div class="chat-messages mb-4" style="max-height: 500px; overflow-y: auto;">
+            {% for msg in messages %}
+              {% set is_sender = msg['sender_id'] == current_user %}
+              <div class="d-flex mb-3 {% if is_sender %}justify-content-end{% else %}justify-content-start{% endif %}">
+                <div class="p-3 rounded-3 {% if is_sender %}bg-primary text-white text-end{% else %}bg-light text-dark text-start{% endif %}" style="max-width: 75%;">
+                  <div>{{ msg['message'] }}</div>
+                  <div class="text-muted small mt-2">{{ msg['created_at'].strftime('%b %d, %Y %I:%M %p') }}</div>
+                </div>
+              </div>
+            {% else %}
+              <p class="text-center text-muted">No messages yet. Start the conversation below.</p>
+            {% endfor %}
+          </div>
+
+          <form method="post" class="d-flex gap-2">
+            <input type="text" name="message" class="form-control" placeholder="Type message here..." required>
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

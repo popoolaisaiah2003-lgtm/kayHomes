@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Post Property - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <h3 class="mb-4">Post a Property</h3>
+      <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="mb-3">
+          <label class="form-label">Property Title</label>
+          <input type="text" name="prop_title" class="form-control" required>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Property Type</label>
+            <select name="prop_type" class="form-select" required>
+              <option value="">Select property type</option>
+              <option>Apartment</option>
+              <option>Duplex</option>
+              <option>Bungalow</option>
+              <option>Detached House</option>
+              <option>Semi Detached House</option>
+              <option>Studio Apartment</option>
+              <option>Penthouse</option>
+              <option>Commercial Property</option>
+              <option>Office Space</option>
+              <option>Warehouse</option>
+              <option>Shop</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Listing Type</label>
+            <select name="listing_type" class="form-select" required>
+              <option value="">Select listing type</option>
+              <option>Rent</option>
+              <!-- <option>Sale</option> -->
+              <option>Short Let</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Property Description</label>
+          <textarea name="prop_desc" class="form-control" rows="4" required></textarea>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Property Price</label>
+            <input type="text" name="prop_price" class="form-control" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Property Location</label>
+            <input type="text" name="prop_location" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Property State</label>
+            <select id="prop_state" name="prop_state" class="form-select" required>
+              <option value="">Select state</option>
+              <option>Lagos</option>
+              <option>Abuja (FCT)</option>
+              <option>Ogun</option>
+              <option>Rivers</option>
+              <option>Anambra</option>
+              <option>Oyo</option>
+              <option>Kaduna</option>
+              <option>Kano</option>
+              <option>Enugu</option>
+              <option>Delta</option>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Local Government</label>
+            <select id="prop_lga" name="prop_lga" class="form-select" required>
+              <option value="">Select local government</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Property Address</label>
+          <input type="text" name="prop_address" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Property Images</label>
+          <input type="file" name="images" multiple accept="image/*" class="form-control">
+        </div>
+
+        <button class="btn btn-primary">Submit</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  // State -> Local Government mapping (sample)
+  const lgaMap = {
+    'Lagos': ['Ikeja','Eti-Osa','Surulere','Lagos Island','Ikorodu','Alimosho'],
+    'Abuja (FCT)': ['Abuja Municipal','Gwagwalada','Kwali','Kuje','Bwari'],
+    'Ogun': ['Abeokuta North','Abeokuta South','Ifo','Sagamu','Ijebu East'],
+    'Rivers': ['Port Harcourt','Obio-Akpor','Eleme','Okrika','Ikwerre'],
+    'Anambra': ['Awka South','Awka North','Onitsha North','Onitsha South','Nnewi North'],
+    'Oyo': ['Ibadan North','Ibadan South-West','Ogbomoso North','Oyo East','Iseyin'],
+    'Kaduna': ['Kaduna North','Kaduna South','Zaria','Kachia','Jema a'],
+    'Kano': ['Kano Municipal','Fagge','Gwale','Dala','Nassarawa'],
+    'Enugu': ['Enugu North','Enugu South','Enugu East','Awgu','Aninri'],
+    'Delta': ['Warri South','Warri North','Ethiope East','Sapele','Ughelli South']
+  };
+
+  const stateEl = document.getElementById('prop_state');
+  const lgaEl = document.getElementById('prop_lga');
+
+  function populateLgas(state) {
+    lgaEl.innerHTML = '<option value="">Select local government</option>';
+    if (!state || !lgaMap[state]) return;
+    lgaMap[state].forEach(lga => {
+      const opt = document.createElement('option');
+      opt.value = lga;
+      opt.textContent = lga;
+      lgaEl.appendChild(opt);
+    });
+  }
+
+  stateEl.addEventListener('change', function(){
+    populateLgas(this.value);
+  });
+
+  // on page load, if state preselected populate LGAs
+  document.addEventListener('DOMContentLoaded', function(){
+    if (stateEl.value) populateLgas(stateEl.value);
+  });
+</script>
+{% endblock %}

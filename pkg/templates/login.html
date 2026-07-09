@@ -29,44 +29,26 @@
         </button>
 
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-lg-center">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('properties') }}">Properties</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('about') }}">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Dashboard
-              </a>
-              <ul class="dropdown-menu shadow-sm">
-                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">User Dashboard</a></li>
-                <li><a class="dropdown-item" href="#">My Favorites</a></li>
-                <li><a class="dropdown-item" href="#">Saved Search</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('user') }}">Account Settings</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="{{ url_for('login') }}">Sign Out</a></li>
-              </ul>
-            </li>
-          </ul>
 
-          <form class="d-flex ms-lg-4 mt-3 mt-lg-0" role="search">
-            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-            <button class="btn btn-success" type="submit">Search</button>
-          </form>
+    <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+        </li>
+    </ul>
 
-          <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
-            <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
-            <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
-          </div>
-        </div>
+    <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
+        <a class="btn btn-outline-primary me-2"
+           href="{{ url_for('login') }}">
+            Sign In
+        </a>
+
+        <a class="btn btn-primary"
+           href="{{ url_for('register') }}">
+            Sign Up
+        </a>
+    </div>
+
+</div>
       </div>
     </nav>
     
@@ -74,28 +56,65 @@
         <div class="container-fluid">
             <div class="row"> 
                 <div class="col-sm-12 col-md-6 image-side d-flex align-items-center justify-content-center">
-                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="img-fluid rounded w-100 vh-50 object-fit-cover" alt="">
+                    <img src="{{ url_for('static', filename='images/img1.jpg') }}"
+                      class="img-fluid rounded w-100"
+                      style="height:100vh; object-fit:cover;"
+                      alt="Login Image">
                 </div>
 
                 <!--right column-->
 
                 <div class="col-sm-12 col-md-6 form-side">
-                    <form action="" class="login-form">
-                        <h2>KAYHOMES</h2>
-                        <p>Please Login to your account</p>
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <form action="{{ url_for('login') }}" method="POST" class="login-form">
+                   
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email address</label>
-                            <input type="email" class="form-control" id="email" placeholder="Enter your email">
-                        </div>
+                    <h2 class="mb-3">KAYHOMES</h2>
+                    <p class="mb-4">Please login to your account</p>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" placeholder="Enter your password">
-                        </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            required>
+                    </div>
 
-                        <button type="submit" class="btn btn-primary w-100">Login Button</button>
-                    </form>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Login
+                    </button>
+
+                    <p class="text-center mt-3 mb-0">
+                        Need an account? <a href="{{ url_for('register') }}">Register here</a>
+                    </p>
+                    <p class="text-center mt-2 mb-0">
+                        <a href="{{ url_for('admin_login') }}">Admin login</a>
+                    </p>
+
+                </form>
+                
                 </div>
             </div>
 

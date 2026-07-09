@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <h3 class="mb-4">Conversations</h3>
+      <div class="list-group">
+        {% if conversations %}
+          {% for convo in conversations %}
+            <a href="{{ url_for('chat', property_id=convo.property_id, user_id=convo.other_id) }}" class="list-group-item list-group-item-action mb-2 shadow-sm">
+              <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ convo.prop_title }}</h5>
+                <small class="text-muted">{{ convo.last_time.strftime('%b %d, %I:%M %p') if convo.last_time else '' }}</small>
+              </div>
+              <p class="mb-1 text-truncate">{{ convo.last_message }}</p>
+              <small class="text-muted">{{ convo.other_name }}</small>
+            </a>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-secondary">No conversations yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -27,46 +27,27 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
-
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto align-items-lg-center">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('properties') }}">Properties</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('about') }}">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Dashboard
-              </a>
-              <ul class="dropdown-menu shadow-sm">
-                <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">User Dashboard</a></li>
-                <li><a class="dropdown-item" href="#">My Favorites</a></li>
-                <li><a class="dropdown-item" href="#">Saved Search</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('user') }}">Account Settings</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="{{ url_for('login') }}">Sign Out</a></li>
-              </ul>
-            </li>
-          </ul>
 
-          <form class="d-flex ms-lg-4 mt-3 mt-lg-0" role="search">
-            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-            <button class="btn btn-success" type="submit">Search</button>
-          </form>
+    <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+        </li>
+    </ul>
 
-          <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
-            <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
-            <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
-          </div>
-        </div>
+    <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
+        <a class="btn btn-outline-primary me-2"
+           href="{{ url_for('login') }}">
+            Sign In
+        </a>
+
+        <a class="btn btn-primary"
+           href="{{ url_for('register') }}">
+            Sign Up
+        </a>
+    </div>
+
+</div>
       </div>
     </nav>  
     
@@ -80,37 +61,52 @@
                 <!--right side : create account form-->
                 <div class="col-sm-12 col-md-6 register-form-side">
 
-                    <form action="" class="register-form">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <form action="{{ url_for('register') }}" method="POST" class="register-form">
+                  
                         <h2 class="register-title">Create an Account</h2>
                         <p class="register-subtitle">Join kayHomes to find your perfect rentals</p>
 
                         <!--full name section-->
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" placeholder="Enter your full name">
+                        <div class="md-6">
+                            <label>First Name</label>
+                            <input type="text" name="fname" class="form-control" required>
+                        </div>
+
+                        <div class="md-6">
+                            <label>Last Name</label>
+                            <input type="text" name="lname" class="form-control" required>
                         </div>
                         <!--email section-->
-                        <div class="mb-3">
+                        <div class="mb-6">
                             <label for="email" class="form-label">Email address</label>
-                            <input type="email" class="form-control" placeholder="Enter your email address">
+                            <input type="email" name="email" class="form-control" placeholder="Enter your email address" required>
                         </div>
 
                         <!--phone number section-->
-                        <div class="mb-3">
+                        <div class="mb-6">
                             <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" placeholder="Enter your phone number">
+                            <input type="tel" name="phone" class="form-control" placeholder="Enter your phone number">
                         </div>
 
                         <!--password section-->
-                        <div class="mb-3">
+                        <div class="mb-6">
                             <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" placeholder="Create a password">
+                            <input type="password" name="password" class="form-control" placeholder="Create a password" minlength="8" required>
                         </div>
 
                          <!--confirm password section-->
-                        <div class="mb-3">
+                        <div class="mb-6">
                             <label for="confirm-password" class="form-label">Confirm Password</label>
-                            <input type="password" class="form-control" placeholder="Confirm your password">
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirm your password" minlength="8" required>
                         </div>
                         <!--register button-->
                         <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>

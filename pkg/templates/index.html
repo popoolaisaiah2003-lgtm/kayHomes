@@ -12,7 +12,7 @@
             <p class="lead text-secondary">Your dream home awaits. Explore our wide range of properties and find the perfect one for you.</p>
             <div class="d-flex flex-column flex-sm-row gap-3 mt-4">
               <a class="btn btn-primary btn-lg" href="{{ url_for('properties') }}">Explore Properties</a>
-              <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('contact') }}">Request a Tour</a>
+              <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('contact') }}">Make an Inquiry</a>
             </div>
           </div>
           <div class="col-lg-7">
@@ -76,91 +76,34 @@
         <p class="text-muted mb-0">Explore our featured homes and properties updated regularly.</p>
       </div>
       <div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
-        <div class="col">
-          <div class="card property-card h-100">
-            <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="Property 1">
-            <div class="card-body">
-              <h5 class="card-title">Modern Family Home</h5>
-              <p class="card-text text-muted">Beautiful family home with spacious living area and private garden.</p>
-              <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
+        {% if featured_properties %}
+          {% for property in featured_properties[:4] %}
+            <div class="col">
+              <a href="{{ url_for('property_detail', property_id=property.prop_id) }}" class="text-decoration-none text-reset">
+                <div class="card property-card h-100 shadow-sm border-0">
+                  {% if property.cover_image %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ property.cover_image) }}" class="card-img-top" alt="{{ property.prop_title }}" style="height: 240px; object-fit: cover;">
+                  {% else %}
+                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ property.prop_title }}" style="height: 240px; object-fit: cover;">
+                  {% endif %}
+                  <div class="card-body">
+                    <h5 class="card-title">{{ property.prop_title }}</h5>
+                    <p class="card-text text-muted mb-2">{{ property.prop_location }}{% if property.prop_state %} - {{ property.prop_state }}{% endif %}</p>
+                    <p class="card-text text-muted">{{ property.prop_desc|striptags|truncate(90) }}</p>
+                    <p class="fw-semibold text-primary mb-0">{{ property.prop_price }}</p>
+                  </div>
+                </div>
+              </a>
             </div>
+          {% endfor %}
+        {% else %}
+          <div class="col-12 text-center text-muted">
+            No featured properties available yet.
           </div>
-        </div>
-        <div class="col">
-          <div class="card property-card h-100">
-            <img src="{{ url_for('static', filename='images/img2.png') }}" class="card-img-top" alt="Property 2">
-            <div class="card-body">
-              <h5 class="card-title">Cozy City Apartment</h5>
-              <p class="card-text text-muted">A stylish apartment located close to shops, restaurants, and transit links.</p>
-              <p class="card-text"><small class="text-muted">Last updated 10 mins ago</small></p>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card property-card h-100">
-            <img src="{{ url_for('static', filename='images/img3.png') }}" class="card-img-top" alt="Property 3">
-            <div class="card-body">
-              <h5 class="card-title">Luxury Villa Escape</h5>
-              <p class="card-text text-muted">Spacious villa with premium finishes and a tranquil outdoor patio.</p>
-              <p class="card-text"><small class="text-muted">Last updated 15 mins ago</small></p>
-            </div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="card property-card h-100">
-            <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="Property 4">
-            <div class="card-body">
-              <h5 class="card-title">Serene Garden Retreat</h5>
-              <p class="card-text text-muted">Charming property with lush landscaping and quiet living spaces.</p>
-              <p class="card-text"><small class="text-muted">Last updated 22 mins ago</small></p>
-            </div>
-          </div>
-        </div>
+        {% endif %}
       </div>
     </section>
     <hr>
-
-<!--About section begin  -->
-<section class="stats-section py-5 my-4">
-  <div class="container text-center">
-
-    <div class="row mb-5 justify-content-center">
-      <div class="col-md-10">
-        <h3 class="fw-bold mb-3 text-start"> About KayHomes</h3>
-        <p class="text-muted text-start lh-lg fs-6">
-          KayHomes is a premier real estate and property platform providing modern housing solutions. <br>
-          We offer home seekers an easy way to find premium rental properties and modern apartments tailored <br>
-          specifically for luxury and everyday comfort.
-        </p>
-      </div>
-    </div>
-    <hr>
-    <div class="row g-4 justify-content-center">
-
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">10,000</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Agents & Developers</p>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">158,000</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Property Listings</p>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">90</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Area Covered</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-    </section>
 
     <!--About section begin  -->
     <section class="stats-section py-5 my-4">
@@ -181,22 +124,22 @@
 
           <div class="col-6 col-md-4">
             <div class="stat-box">
-              <h2 class="stat-number fw-bold display-4">10,000</h2>
+              <h2 class="stat-number fw-bold display-4">{{ '{:,}'.format(agents_count|default(0)) }}</h2>
               <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Agents & Developers</p>
             </div>
           </div>
 
           <div class="col-6 col-md-4">
             <div class="stat-box">
-              <h2 class="stat-number fw-bold display-4">158,000</h2>
+              <h2 class="stat-number fw-bold display-4">{{ '{:,}'.format(property_count|default(0)) }}</h2>
               <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Property Listings</p>
             </div>
           </div>
 
           <div class="col-6 col-md-4">
             <div class="stat-box">
-              <h2 class="stat-number fw-bold display-4">90</h2>
-              <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Area Covered</p>
+              <h2 class="stat-number fw-bold display-4">{{ '{:,}'.format(users_count|default(0)) }}</h2>
+              <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Total Registered Users</p>
             </div>
           </div>
 

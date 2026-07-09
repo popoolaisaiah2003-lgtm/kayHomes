@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Login - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="login-page-container">
+  <div class="container py-5">
+    <div class="row justify-content-center fade-up">
+      <div class="col-lg-5 col-md-7">
+        <form action="{{ url_for('admin_login') }}" method="POST" class="login-form">
+          <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+          <h2 class="mb-2">Admin Portal</h2>
+          <p class="text-muted mb-4">Sign in to access the KayHomes admin dashboard.</p>
+
+          <div class="mb-3">
+            <label for="admin-username" class="form-label">Username</label>
+            <input
+              type="text"
+              class="form-control"
+              id="admin-username"
+              name="username"
+              placeholder="Enter admin username"
+              required>
+          </div>
+
+          <div class="mb-4">
+            <label for="admin-password" class="form-label">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="admin-password"
+              name="password"
+              placeholder="Enter password"
+              required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Login as Admin</button>
+          {% if admin_total_count == 0 %}
+            <div class="mt-3 text-center">
+              <a href="{{ url_for('admin_register') }}" class="small text-decoration-none">First-time setup? Create the first admin account</a>
+            </div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{
+  "name": "KayHomes",
+  "short_name": "KayHomes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F172A",
+  "icons": [
+    {
+      "src": "/static/images/logo-kayhomes-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

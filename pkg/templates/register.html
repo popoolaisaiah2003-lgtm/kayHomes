@@ -1,269 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KayHomes</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Cormorant+SC:wght@300;400;500;600;700&family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="icon" href="favicon_io/favicon.ico" sizes="16x16" type="image/png">
-	<link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
-	<link rel="manifest" href="favicon_io/site.webmanifest">
-    
- 
-</head>
- <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-      <div class="container-fluid px-4">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
-          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="KayHomes logo" class="d-inline-block align-text-top navbar-logo">
-          <span class="fw-bold text-primary fs-5"></span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
+{% extends 'base.html' %}
 
-    <ul class="navbar-nav ms-auto align-items-lg-center">
-        <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-        </li>
-    </ul>
+{% block title %}Register - KayHomes{% endblock %}
 
-    <div class="d-flex ms-lg-3 mt-3 mt-lg-0">
-        <a class="btn btn-outline-primary me-2"
-           href="{{ url_for('login') }}">
-            Sign In
-        </a>
-
-        <a class="btn btn-primary"
-           href="{{ url_for('register') }}">
-            Sign Up
-        </a>
-    </div>
-
-</div>
+{% block main_content %}
+<div class="register-page-container">
+  <div class="container py-5">
+    <div class="row g-4 align-items-center fade-up">
+      <div class="col-lg-6 d-none d-lg-block">
+        <img src="{{ url_for('static', filename='images/img2.png') }}"
+          class="img-fluid rounded-4 w-100"
+          style="height: 700px; object-fit: cover;"
+          alt="Modern apartment living room">
       </div>
-    </nav>  
-    
-    <div class="register-page-container">
-        <div class="container-fluid">
-            <div class="row"> 
-                <!--left side : property showcase image-->
-                <div class="col-sm-12 col-md-6 register-image-side">
-                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" alt="Register Image" class="rounded">
-                </div>
-                <!--right side : create account form-->
-                <div class="col-sm-12 col-md-6 register-form-side">
 
-                    {% with messages = get_flashed_messages(with_categories=True) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }}">
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-                    <form action="{{ url_for('register') }}" method="POST" class="register-form">
-                  
-                        <h2 class="register-title">Create an Account</h2>
-                        <p class="register-subtitle">Join kayHomes to find your perfect rentals</p>
+      <div class="col-lg-6">
+        <form action="{{ url_for('register') }}" method="POST" class="register-form">
+          <h2 class="mb-2">Create an Account</h2>
+          <p class="text-muted mb-4">Join KayHomes and start discovering premium properties.</p>
 
-                        <!--full name section-->
-                        <div class="md-6">
-                            <label>First Name</label>
-                            <input type="text" name="fname" class="form-control" required>
-                        </div>
-
-                        <div class="md-6">
-                            <label>Last Name</label>
-                            <input type="text" name="lname" class="form-control" required>
-                        </div>
-                        <!--email section-->
-                        <div class="mb-6">
-                            <label for="email" class="form-label">Email address</label>
-                            <input type="email" name="email" class="form-control" placeholder="Enter your email address" required>
-                        </div>
-
-                        <!--phone number section-->
-                        <div class="mb-6">
-                            <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" name="phone" class="form-control" placeholder="Enter your phone number">
-                        </div>
-
-                        <!--password section-->
-                        <div class="mb-6">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" placeholder="Create a password" minlength="8" required>
-                        </div>
-
-                         <!--confirm password section-->
-                        <div class="mb-6">
-                            <label for="confirm-password" class="form-label">Confirm Password</label>
-                            <input type="password" name="confirm_password" class="form-control" placeholder="Confirm your password" minlength="8" required>
-                        </div>
-                        <!--register button-->
-                        <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
-
-                        <!--login redirect section-->
-                        <p class="text-center">
-                            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
-                        </p>
-                    </form>
-                </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="fname" class="form-label">First Name</label>
+              <input id="fname" type="text" name="fname" class="form-control" required>
             </div>
 
-        </div>
-    </div>
+            <div class="col-md-6">
+              <label for="lname" class="form-label">Last Name</label>
+              <input id="lname" type="text" name="lname" class="form-control" required>
+            </div>
 
+            <div class="col-12">
+              <label for="email" class="form-label">Email address</label>
+              <input id="email" type="email" name="email" class="form-control" placeholder="Enter your email address" required>
+            </div>
 
-<hr>
-<!--About section begin  -->
-<section class="stats-section py-5 my-4">
-  <div class="container text-center">
+            <div class="col-12">
+              <label for="phone" class="form-label">Phone Number</label>
+              <input id="phone" type="tel" name="phone" class="form-control" placeholder="Enter your phone number">
+            </div>
 
-    <div class="row mb-5 justify-content-center">
-      <div class="col-md-10">
-        <h3 class="fw-bold mb-3 text-start"> About KayHomes</h3>
-        <p class="text-muted text-start lh-lg fs-6">
-          KayHomes is a premier real estate and property platform providing modern housing solutions. <br>
-          We offer home seekers an easy way to find premium rental properties and modern apartments tailored <br>
-          specifically for luxury and everyday comfort.
-        </p>
-      </div>
-    </div>
-    <hr>
-    <div class="row g-4 justify-content-center">
+            <div class="col-md-6">
+              <label for="password" class="form-label">Password</label>
+              <input id="password" type="password" name="password" class="form-control" placeholder="Create a password" minlength="8" required>
+            </div>
 
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">10,000</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Agents & Developers</p>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">158,000</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Property Listings</p>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4">
-        <div class="stat-box">
-          <h2 class="stat-number fw-bold display-4">90</h2>
-          <p class="stat-label text-uppercase text-muted small fw-semibold tracking-wider"> Area Covered</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- footer section  -->
-
-<div class="bg-danger py-3 text-white">
-  <div class="container d-flex flex-column flex-md-row justify-content-between  align-items-center gap-3">
-    <h5 class="mb-0 fw-semibold text-center text-md-start fs-6">Are you in search of a property or an agent? List your property for FREE.</h5>
-    <a href="#" class="btn btn-outline-light px-4 py-2 fw-bold btn-sm">Register Now!</a>
-  </div>
-</div>
-
-<footer class="bg-light py-5 border-top ">
-    <div class="container">
-      <div class="row g-4">
-
-          <!-- About section footer -->
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small"> About Us</h6>
-            <p class="small text-muted th-base mb-3">
-              kayHomes is a leading property website in Nigeria with property listings for rent and leaase. KayHomes is a premier real estate and property platform providing modern housing solutions. <br>
-              We offer home seekers an easy way to find premium rental properties and modern apartments tailored
-              specifically for luxury and everyday comfort.
-            </p>
-            <a href="{{ url_for('about') }}" class="btn btn-danger btn-sm px-3 rounded-1 mb-4" style="font-size: 0.75rem;">Learn more</a>
-
-            <h6 class="text-uppercase fw-bold text-dark mb-2 small">Advertise With Us </h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Advertise Your Property</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Featured Real Estate companies</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Place Banner Adverts</a></li>
-            </ul>
-          </div>
-          
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3  small">Market Trends</h6>
-            <ul class="list-unstyled mb-4 small">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Property Demand Trends</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Average Propert Prices</a></li>
-            </ul>
-          </div>
-
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Popular Property</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats for rent in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for lease in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Land for lease in Abuja</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Mini-flats for rent in Abuja</a></li>
-            </ul>
-          </div>  
-            
-          <div class="col-sm-12 col-md-3"> 
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Properties For Rent</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Commercial properties for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats & apartments for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Mini flat for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Self-contained for rent</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Studio apartments for rent</a></li>
-            </ul>
-          </div>
-
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Follow Us</h6>
-            <div class="d-flex gap-2 mb-4">
-              <a href="#"><img src="{{ url_for('static', filename='images/fb.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="facebook image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/x.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="x image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/tk.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="Tiktok image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/yt.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="youtube image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/in.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="linked-in image icon"></a>
+            <div class="col-md-6">
+              <label for="confirm-password" class="form-label">Confirm Password</label>
+              <input id="confirm-password" type="password" name="confirm_password" class="form-control" placeholder="Confirm your password" minlength="8" required>
             </div>
           </div>
-      
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Rental Agents</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Lagos</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Abuja</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Leasing agents in other states</a></li>
-            </ul>
-          </div>
 
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Tenant tools</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Neighborhood Guide</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">MoveMe (relocation help)</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Tenant rights & policy</a></li>
-            </ul>
-          </div>
+          <button type="submit" class="btn btn-primary w-100 mt-4">Register</button>
 
-        </div>
+          <p class="text-center mt-3 mb-0">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+          </p>
+        </form>
       </div>
-      <hr>
-        <div class="text-center mt-4 text-muted">© 2026 KayHomes. All rights reserved.</div>
-</footer>
-    
- </body>
- </html>
-
-    
+    </div>
+  </div>
+</div>
+{% endblock %}

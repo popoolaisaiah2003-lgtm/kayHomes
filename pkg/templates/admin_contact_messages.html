@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Contact Messages - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">Contact Messages</h2>
+      <p class="text-muted mb-0">Review and manage messages submitted from the public contact form.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <form method="GET" action="{{ url_for('admin_contact_messages') }}" class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6 col-lg-5">
+          <label class="form-label small text-muted">Search</label>
+          <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by name, email, or subject">
+        </div>
+        <div class="col-md-4 col-lg-3">
+          <label class="form-label small text-muted">Filter by Status</label>
+          <select name="status" class="form-select">
+            <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+            <option value="Unread" {% if status_filter == 'Unread' %}selected{% endif %}>Unread</option>
+            <option value="Read" {% if status_filter == 'Read' %}selected{% endif %}>Read</option>
+            <option value="Replied" {% if status_filter == 'Replied' %}selected{% endif %}>Replied</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-lg-2 d-grid">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+        <div class="col-md-12 col-lg-2 d-grid">
+          <a href="{{ url_for('admin_contact_messages') }}" class="btn btn-outline-secondary">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="small opacity-75">Total Messages</div>
+        <h4 class="mb-0 stat-number">{{ total_messages }}</h4>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="small opacity-75">Unread</div>
+        <h4 class="mb-0 stat-number">{{ unread_messages }}</h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Sender</th>
+              <th>Phone</th>
+              <th>Subject</th>
+              <th>Message Preview</th>
+              <th>Date Submitted</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if messages %}
+              {% for message in messages %}
+                <tr>
+                    {{ message.phone or '-' }}
+                  <td>
+                    <div class="fw-semibold">{{ message.name }}</div>
+                    {{ message.subject or 'No subject' }}
+                  </td>
+                  <td>
+                    <div class="text-muted small">{{ message.email }}</div>
+                  </td>
+                  <td>
+                    {{ message.subject or 'No subject' }}
+                  </td>
+                  <td>{{ message.phone or '-' }}</td>
+                  <td>
+                    <div class="text-muted small text-truncate" style="max-width: 280px;">
+                      {{ message.message }}
+                    </div>
+                  </td>
+                  <td>
+                    {% if message.created_at %}
+                      {{ message.created_at.strftime('%b %d, %Y %I:%M %p') if message.created_at.strftime is defined else message.created_at }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% set status_class = 'bg-secondary' %}
+                    {% if message.status == 'Unread' %}
+                      {% set status_class = 'bg-warning text-dark' %}
+                    {% elif message.status == 'Read' %}
+                      {% set status_class = 'bg-info text-dark' %}
+                    {% elif message.status == 'Replied' %}
+                      {% set status_class = 'bg-success' %}
+                    {% endif %}
+                    <span class="badge {{ status_class }}">{{ message.status or 'Unread' }}</span>
+                  </td>
+                  <td class="text-end">
+                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+                      <a href="{{ url_for('admin_view_contact_message', message_id=message.message_id) }}" class="btn btn-outline-primary btn-sm">View</a>
+                      <form method="POST" action="{{ url_for('admin_mark_contact_message_replied', message_id=message.message_id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                        <button type="submit" class="btn btn-outline-success btn-sm">Mark as Replied</button>
+                      </form>
+                      <form method="POST" action="{{ url_for('admin_delete_contact_message', message_id=message.message_id) }}" class="d-inline" onsubmit="return confirm('Delete this contact message? This action cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-5">
+                  <div class="d-flex flex-column align-items-center gap-2 text-muted">
+                    <i class="bi bi-envelope-paper display-6"></i>
+                    <div class="fw-semibold">No contact messages have been received yet.</div>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if pagination and pagination.pages > 1 %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('admin_contact_messages', page=pagination.prev_num, q=search_query, status=status_filter) }}">Previous</a>
+        </li>
+        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('admin_contact_messages', page=pagination.next_num, q=search_query, status=status_filter) }}">Next</a>
+        </li>
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

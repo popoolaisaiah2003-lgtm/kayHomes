@@ -1,301 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KayHomes</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Cormorant+SC:wght@300;400;500;600;700&family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="icon" href="favicon_io/favicon.ico" sizes="16x16" type="image/png">
-	<link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
-	<link rel="manifest" href="favicon_io/site.webmanifest">
-    
- 
-</head>
- <body>  
-   <nav class="navbar bg-body-tertiary fixed-top">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Offcanvas navbar</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Offcanvas</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">Admin Dashboard</h2>
+      <p class="text-muted mb-0">Overview of platform activity, listings, and account metrics.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin_management') }}" class="btn btn-outline-secondary btn-sm">Admin Management</a>
+      <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary btn-sm">Category Management</a>
+      <a href="{{ url_for('admin_contact_messages') }}" class="btn btn-outline-primary btn-sm">
+        📩 Messages{% if unread_messages_count and unread_messages_count > 0 %} <span class="badge bg-danger ms-1">{{ unread_messages_count }}</span>{% endif %}
+      </a>
+      <a href="{{ url_for('admin_profile') }}" class="btn btn-outline-secondary btn-sm">Admin Profile</a>
+      <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-secondary btn-sm">Change Password</a>
+      <a href="{{ url_for('properties') }}" class="btn btn-outline-primary btn-sm">View Listings</a>
+      <a href="{{ url_for('post_property') }}" class="btn btn-primary btn-sm">Add Property</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Total Properties</div>
+            <h4 class="mb-0 stat-number">{{ total_properties }}</h4>
+          </div>
+          <i class="bi bi-building-fill"></i>
+        </div>
       </div>
-      <div class="offcanvas-body">
-        <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="{{ url_for('user_dashboard') }}">Dashboard</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('properties') }}">Properties</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('property_details') }}">Add property</a>
-          </li>
-          <div class="dropdown">
-                <a class="btn btn-secondary dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Categories
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#">Duplex</a></li>
-                    <li><a class="dropdown-item" href="#">Flat/Apartment</a></li>
-                    <li><a class="dropdown-item" href="#">Mini Flat</a></li>
-                    <li><a class="dropdown-item" href="#">self Contain</a></li>
-                    <li><a class="dropdown-item" href="#">Bungalow</a></li>
-                    <li><a class="dropdown-item" href="#">Studio Apartment</a></li>
-                    <li><a class="dropdown-item" href="#">Land</a></li>
-                    <li><a class="dropdown-item" href="#">Office Space</a></li>
-                    <li><a class="dropdown-item" href="#">Shop</a></li>
-                </ul>
-            </div>
-
-         	<div class="col-md-6">
-			    <label for="inputState" class="form-label">State</label>
-			    <select id="inputState" class="form-select w-100">
-			      <option>Select a State </option>
-			       <option value="Abuja"> Abuja </option>
-			       <option value="Abia"> Abia </option>
-			       <option value="Adamawa">Adamawa </option>
-			       <option value="Akwa Ibom">Akwa Ibom </option>
-			       <option value="Anambra">Anambra </option>
-			       <option value="Bauchi">Bauchi </option>
-			       <option value="Bayelsa">Bayelsa </option>
-			       <option value="Benue">Benue</option>
-			       <option value="Cross River">Cross River</option>
-			       <option value="Delta">Delta</option>
-			       <option value="Ebonyi">Ebonyi</option>
-			       <option value="Edo">Edo</option>
-			       <option value="Enugu">Enugu</option>
-			       <option value="Gombe">Gombe</option>
-			       <option value="Imo">Imo</option>
-			       <option value="Jigawa">Jigawa</option>
-			       <option value="Kaduna">Kaduna</option>
-			       <option value="Kano">Kano</option>
-			       <option value="Katsina">Katsina</option>
-			       <option value="Kogi">Kogi</option>
-			       <option value="Kwara">Kwara</option>
-			       <option value="Lagos">Lagos</option>
-			       <option value="Nassarawa">Nassarawa</option>
-			       <option value="Niger">Niger</option>
-			       <option value="Kaduna">Kaduna</option>
-			       <option value="Ondo">Ondo</option>
-			       <option value="Osun">Osun</option>
-			       <option value="Oyo">Oyo</option>
-			       <option value="Plateau">Plateau</option>
-			       <option value="Rivers">Rivers</option>
-			       <option value="Sokoto">Sokoto</option>
-			       <option value="Taraba">Taraba</option>
-			       <option value="Yobe">Yobe</option>
-			       <option value="Zamfara">Zamfara</option>
-			    </select>
-			</div>
-
-          <li class="nav-item">
-            <a class="nav-link" href="#">LGA</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Users</a>
-          </li>
-        </ul>
-         <button type="submit" class="btn btn-danger w-100">Login Out</button>
-
-        <form class="d-flex mt-3" role="search">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-          <button class="btn btn-outline-success" type="submit">Search</button>
-        </form>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Active Listings</div>
+            <h4 class="mb-0 stat-number">{{ active_listings }}</h4>
+          </div>
+          <i class="bi bi-check2-circle"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-accent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Users</div>
+            <h4 class="mb-0 stat-number">{{ users_count }}</h4>
+          </div>
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-danger">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Favorites</div>
+            <h4 class="mb-0 stat-number">{{ favorites_count }}</h4>
+          </div>
+          <i class="bi bi-heart-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Contact Messages</div>
+            <h4 class="mb-0 stat-number">{{ contact_messages_count }}</h4>
+          </div>
+          <i class="bi bi-envelope-paper-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Administrators</div>
+            <h4 class="mb-0 stat-number">{{ administrators_count }}</h4>
+          </div>
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
       </div>
     </div>
   </div>
-</nav>
-<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-<!-- sidebar -->
-<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebar">
-    <div class="offcanvas-header">
-        <h5>Menu</h5>
-        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
 
-    <div class="offcanvas-body">
-        <ul class="list-group">
-            <li class="list-group-item">Dashboard</li>
-            <li class="list-group-item">Properties</li>
-            <li class="list-group-item">Add property</li>
-            <li class="list-group-item">Categories</li>
-            <li class="list-group-item">States</li>
-            <li class="list-group-item">LGA</li>
-            <li class="list-group-item">Users</li>
-            <li class="list-group-item">Logout</li>
-        </ul>
+  <div class="card border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Property</th>
+              <th>State</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Date Posted</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if properties %}
+              {% for property in properties %}
+                <tr>
+                  <td>{{ property.prop_id }}</td>
+                  <td>{{ property.prop_title }}</td>
+                  <td>{{ property.prop_state }}</td>
+                  <td>{{ property.category }}</td>
+                  <td>{{ property.prop_price }}</td>
+                  <td>{{ property.status }}</td>
+                  <td>
+                    {% if property.date_posted %}
+                      {{ property.date_posted.strftime('%b %d, %Y') if property.date_posted.strftime is defined else property.date_posted }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <a href="{{ url_for('admin_edit_property', property_id=property.prop_id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                    <form method="POST" action="{{ url_for('admin_delete_property', property_id=property.prop_id) }}" class="d-inline" onsubmit="return confirm('Delete this property? This action cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">No properties available.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 </div>
-
-<!-- main content area -->
- <div class="container mt-4">
-
-    <div class="row g-3">
-        <div class="col-md-3">
-            <div class="card card-box p-3 shadow">
-                <h5>Total Properties</h5>
-                <h2>120</h2>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-box p-3 shadow">
-                <h5>Available</h5>
-                <h2>85</h2>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-box p-3 shadow">
-                <h5>Users</h5>
-                <h2>56</h2>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card card-box p-3 shadow">
-                <h5>Favourites</h5>
-                <h2>33</h2>
-            </div>
-        </div>
-    </div>
-
-    <!-- property table -->
-     <div class="card mt-4 shadow">
-        <div class="card-header bg-dark text-white">
-            Property Listings
-        </div>
-
-        <div class="card-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Property</th>
-                        <th>State</th>
-                        <th>Category</th>
-                        <th>Price</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr>
-                        <td>001</td>
-                        <td>4 Bedroom Duplex</td>
-                        <td>Lagos</td>
-                        <td>Rent</td>
-                        <td>N50M</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm">Edit</button>
-                            <button class="btn btn-danger btn-sm">Delete</button>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>002</td>
-                        <td>Mini Flat</td>
-                        <td>Abuja</td>
-                        <td>Rent</td>
-                        <td>N1.2M</td>
-                        <td>
-                            <button class="btn btn-primary btn-sm">Edit</button>
-                            <button class="btn btn-danger btn-sm">Delete</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-     </div>
- </div>
-<script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-<hr>
-<!--footer section-->
-    <footer class="kay-footer bg-dark-blue text-white py-5"> 
-        <div class="container">
-            <div class="row g-4">
-                <div class="footer-container">
-                    <!--column 1 properties for rent-->
-                    <div class="footer-colmn">
-                        <h3>Properties For Rent</h3>
-                            <ul>
-                                <li><a href="#">commercial properties for rent</a></li>
-                                <li><a href="#">flats & apartments for rent </a></li>
-                                <li><a href="#">house for rent</a></li>
-                                <li><a href="#">mini flat for rent </a></li>
-                                <li><a href="#">self contains for rent </a></li>
-                                <li><a href="#">studio apartment for rent </a></li>
-                            </ul>
-                    </div>
-                    <!--column 2  short lets & long term-->
-                    <div class="footer-colmn">
-                        <h3> Short lets</h3>
-                            <ul>
-                                <li><a href="#">short lets in lagos</a></li>
-                                <li><a href="#">short lets in abuja </a></li>
-                                <li><a href="#">short lets in lekki</a></li>
-                                <li><a href="#">short lets in victoria island </a></li>
-                                <li><a href="#">short lets in ikoyi</a></li>
-                                <li><a href="#">short lets in epe</a></li>
-                            </ul>
-
-                            <h3 class="section-spacing"> rental features</h3>
-                            <ul>
-                                <li><a href="#">serviced properties for rent </a></li>
-                                <li><a href="#">furnished properties for rent </a></li>
-                                <li><a href="#">newly built properties for rent </a></li> 
-                            </ul>
-                    </div>
-
-                    <!--column 3 popular rental locations-->
-                    <div class="footer-colmn">
-                        <h3>Popular estates</h3>
-                            <ul>
-                                <li><a href="#">parkview estate, ikoyi</a></li>
-                                <li><a href="#">orchid estate, lekki</a></li>
-                                <li><a href="#">mojisola onikoyi estate</a></li>
-                                <li><a href="#">magodo gra phase 2</a></li>
-                                <li><a href="#">omole estate phase 1 </a></li>
-                                <li><a href="#">victoria garden city estate</a></li>
-                            </ul>
-                    </div>
-
-                    <!--column 4 rental agents & resources-->
-                    <div class="footer-colmn">
-                        <h3> Rental Agents</h3>
-                            <ul>
-                                <li><a href="#">leasing agents in lagos</a></li>
-                                <li><a href="#">leasing agents in abuja</a></li>
-                                <li><a href="#">leasing agents in other states</a></li>
-                            </ul>
-
-                            <h3 class="section-spacing">tenants tools </h3>
-                            <ul>
-                                <li><a href="#">Neighborhood Guide</a></li>
-                                <li><a href="#">MoveMe (relocation help)</a></li>
-                                <li><a href="#">tenant rights & policy</a></li>
-                            </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <button class="btn btn-scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'});" arial-label=""back to top>
-    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="80" fill="currentColor" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
-        <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707z"/>
-    </svg>
-    </button>
-
-</body>
-</html>
+{% endblock %}

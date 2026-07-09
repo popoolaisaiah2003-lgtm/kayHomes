@@ -6,57 +6,49 @@
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-md-8">
-      <h3 class="mb-4">Post a Property</h3>
-      <form method="post" enctype="multipart/form-data">
+      <div class="property-form-shell fade-up">
+      <h3 class="mb-4">{{ 'Edit Property' if property_data else 'Post a Property' }}</h3>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('post_property', property_id=property_data.prop_id) if property_data else url_for('post_property') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <div class="mb-3">
           <label class="form-label">Property Title</label>
-          <input type="text" name="prop_title" class="form-control" required>
+          <input type="text" name="prop_title" class="form-control" value="{{ property_data.prop_title if property_data else '' }}" required>
         </div>
 
         <div class="row g-3">
           <div class="col-md-6 mb-3">
-            <label class="form-label">Property Type</label>
-            <select name="prop_type" class="form-select" required>
-              <option value="">Select property type</option>
-              <option>Apartment</option>
-              <option>Duplex</option>
-              <option>Bungalow</option>
-              <option>Detached House</option>
-              <option>Semi Detached House</option>
-              <option>Studio Apartment</option>
-              <option>Penthouse</option>
-              <option>Commercial Property</option>
-              <option>Office Space</option>
-              <option>Warehouse</option>
-              <option>Shop</option>
+            <label class="form-label">Property Category</label>
+            <select name="category_id" class="form-select" required>
+              <option value="">Select property category</option>
+              {% for category in categories %}
+                <option value="{{ category.cat_id }}" {% if property_data and property_data.category_id == category.cat_id %}selected{% endif %}>{{ category.cat_name }}</option>
+              {% endfor %}
             </select>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Listing Type</label>
             <select name="listing_type" class="form-select" required>
               <option value="">Select listing type</option>
-              <option>Rent</option>
-              <!-- <option>Sale</option> -->
-              <option>Short Let</option>
+              <option value="Rent" {% if property_data and property_data.listing_type == 'Rent' %}selected{% endif %}>Rent</option>
+              <option value="Short Let" {% if property_data and property_data.listing_type == 'Short Let' %}selected{% endif %}>Short Let</option>
             </select>
           </div>
         </div>
 
         <div class="mb-3">
           <label class="form-label">Property Description</label>
-          <textarea name="prop_desc" class="form-control" rows="4" required></textarea>
+          <textarea name="prop_desc" class="form-control" rows="4" required>{{ property_data.prop_desc if property_data else '' }}</textarea>
         </div>
 
         <div class="row g-3">
           <div class="col-md-6 mb-3">
             <label class="form-label">Property Price</label>
-            <input type="text" name="prop_price" class="form-control" required>
+            <input type="text" name="prop_price" class="form-control" value="{{ property_data.prop_price if property_data else '' }}" required>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Property Location</label>
-            <input type="text" name="prop_location" class="form-control" required>
+            <input type="text" name="prop_location" class="form-control" value="{{ property_data.prop_location if property_data else '' }}" required>
           </div>
         </div>
 
@@ -65,16 +57,16 @@
             <label class="form-label">Property State</label>
             <select id="prop_state" name="prop_state" class="form-select" required>
               <option value="">Select state</option>
-              <option>Lagos</option>
-              <option>Abuja (FCT)</option>
-              <option>Ogun</option>
-              <option>Rivers</option>
-              <option>Anambra</option>
-              <option>Oyo</option>
-              <option>Kaduna</option>
-              <option>Kano</option>
-              <option>Enugu</option>
-              <option>Delta</option>
+              <option value="Lagos" {% if property_data and property_data.prop_state == 'Lagos' %}selected{% endif %}>Lagos</option>
+              <option value="Abuja (FCT)" {% if property_data and property_data.prop_state == 'Abuja (FCT)' %}selected{% endif %}>Abuja (FCT)</option>
+              <option value="Ogun" {% if property_data and property_data.prop_state == 'Ogun' %}selected{% endif %}>Ogun</option>
+              <option value="Rivers" {% if property_data and property_data.prop_state == 'Rivers' %}selected{% endif %}>Rivers</option>
+              <option value="Anambra" {% if property_data and property_data.prop_state == 'Anambra' %}selected{% endif %}>Anambra</option>
+              <option value="Oyo" {% if property_data and property_data.prop_state == 'Oyo' %}selected{% endif %}>Oyo</option>
+              <option value="Kaduna" {% if property_data and property_data.prop_state == 'Kaduna' %}selected{% endif %}>Kaduna</option>
+              <option value="Kano" {% if property_data and property_data.prop_state == 'Kano' %}selected{% endif %}>Kano</option>
+              <option value="Enugu" {% if property_data and property_data.prop_state == 'Enugu' %}selected{% endif %}>Enugu</option>
+              <option value="Delta" {% if property_data and property_data.prop_state == 'Delta' %}selected{% endif %}>Delta</option>
             </select>
           </div>
           <div class="col-md-6 mb-3">
@@ -87,16 +79,53 @@
 
         <div class="mb-3">
           <label class="form-label">Property Address</label>
-          <input type="text" name="prop_address" class="form-control" required>
+          <input type="text" name="prop_address" class="form-control" value="{{ property_data.prop_address if property_data else '' }}" required>
         </div>
 
         <div class="mb-3">
           <label class="form-label">Property Images</label>
-          <input type="file" name="images" multiple accept="image/*" class="form-control">
+          <input type="file" id="images" name="images" multiple accept=".jpg,.jpeg,.png,.webp" class="form-control">
+          <div class="form-text">Upload up to {{ max_property_images }} images in JPG, JPEG, PNG, or WEBP format. First image becomes cover image.</div>
+
+          {% set current_count = existing_images|length if existing_images else 0 %}
+          {% set remaining = max_property_images - current_count %}
+          <div class="mt-2">
+            <span class="badge bg-light text-dark border">Current images: {{ current_count }}</span>
+            <span class="badge bg-light text-dark border">You can upload: {{ remaining if remaining > 0 else 0 }} more</span>
+          </div>
+
+          <div id="imageValidationError" class="invalid-feedback d-block" style="display:none !important;"></div>
+          <div id="imageUploadMeta" data-max-images="{{ max_property_images }}" data-current-images="{{ current_count }}" style="display:none;"></div>
         </div>
 
-        <button class="btn btn-primary">Submit</button>
+        <button class="btn btn-primary">{{ 'Update Property' if property_data else 'Submit' }}</button>
       </form>
+      </div>
+
+      {% if property_data and existing_images %}
+        <div class="mt-5">
+          <h5 class="fw-semibold mb-3">Uploaded Images</h5>
+          <div class="row g-3">
+            {% for img in existing_images %}
+              <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm">
+                  <img src="{{ url_for('static', filename='uploads/' ~ img.image_path) }}" class="card-img-top" alt="Property image" style="height: 130px; object-fit: cover;">
+                  <div class="card-body p-2">
+                    {% if loop.first %}
+                      <div class="small text-success mb-2 fw-semibold">Cover image</div>
+                    {% endif %}
+                    {% if img.image_id is defined and img.image_id %}
+                      <form method="post" action="{{ url_for('delete_listing_image', property_id=property_data.prop_id, image_id=img.image_id) }}" onsubmit="return confirm('Delete this image?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">Delete</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -132,6 +161,48 @@
   stateEl.addEventListener('change', function(){
     populateLgas(this.value);
   });
+
+  const imageInput = document.getElementById('images');
+  const imageError = document.getElementById('imageValidationError');
+  const imageMeta = document.getElementById('imageUploadMeta');
+  const maxImages = Number(imageMeta?.dataset.maxImages || 0);
+  const currentImages = Number(imageMeta?.dataset.currentImages || 0);
+  const allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
+
+  function resetImageError() {
+    imageError.style.display = 'none';
+    imageError.textContent = '';
+    imageInput.classList.remove('is-invalid');
+  }
+
+  function showImageError(msg) {
+    imageError.style.display = 'block';
+    imageError.textContent = msg;
+    imageInput.classList.add('is-invalid');
+  }
+
+  if (imageInput) {
+    imageInput.addEventListener('change', function() {
+      resetImageError();
+      const files = Array.from(this.files || []);
+      if (!files.length) return;
+
+      if ((currentImages + files.length) > maxImages) {
+        showImageError(`You can upload only ${Math.max(maxImages - currentImages, 0)} more image(s).`);
+        this.value = '';
+        return;
+      }
+
+      for (const file of files) {
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+        if (!allowedExt.includes(ext)) {
+          showImageError(`Unsupported file type: ${file.name}. Allowed: JPG, JPEG, PNG, WEBP.`);
+          this.value = '';
+          return;
+        }
+      }
+    });
+  }
 
   // on page load, if state preselected populate LGAs
   document.addEventListener('DOMContentLoaded', function(){

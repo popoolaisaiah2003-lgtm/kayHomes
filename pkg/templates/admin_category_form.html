@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Add Category' if mode == 'create' else 'Edit Category' }} - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">{{ 'Add Category' if mode == 'create' else 'Edit Category' }}</h2>
+      <p class="text-muted mb-0">{{ 'Create a new property category.' if mode == 'create' else 'Update this category name or description.' }}</p>
+    </div>
+    <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary btn-sm">Back to Categories</a>
+  </div>
+
+  <div class="property-form-shell">
+    <form method="POST" class="row g-3">
+      <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+
+      <div class="col-md-8">
+        <label class="form-label">Category Name</label>
+        <input type="text" name="cat_name" class="form-control" value="{{ form_data.cat_name if form_data else '' }}" maxlength="100" required>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea name="cat_desc" rows="4" class="form-control" maxlength="2000">{{ form_data.cat_desc if form_data else '' }}</textarea>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{{ 'Create Category' if mode == 'create' else 'Save Changes' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

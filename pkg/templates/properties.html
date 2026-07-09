@@ -3,75 +3,169 @@
 {% block title %}Properties - KayHomes{% endblock %}
 
 {% block main_content %}
-    <div class="property-page-wrapper">
-        <div class="container-fluid py-4">
-            <div class=" b1 row mb-4">
-                <div class="col-12">
-                    <a href="{{ url_for('home') }}" class="btn btn-back-previous">
-                       <i class="bi bi-arrow-left me-2">Back</i>
-                    </a>
-                </div>
-            </div>
-            <div class="row"> 
-
-                <!--sidebar column-->
-                <div class="col-sm-12 col-md-3 mb-4">
-                    <div class="sidebar-box">
-                        <h4>Sidebar</h4>
-                        <ul class="sidebar-links">
-                            <li><a href="#" class="active">All Rentals</a></li>
-                            <li><a href="#">Apartments</a></li>
-                            <li><a href="#">Duplexes</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <!--card section-->
-                
-                        <div class="col-sm-12 col-md-9">
-                    <div class="row align-items-center mb-4 g-3">
-                        <div class="col-sm-12 col-md-8">
-                            <input type="text" class="form-control" placeholder="Search bar...">
-                        </div>
-
-                                <div class="col-sm-12 col-md-4-end">
-                                    <a href="{{ url_for('post_property') }}" class="btn btn-add-property w-100"> + Add Property</a>
-                                </div>
-                    </div>
-                    
-                <!--card section-->
-
-                <div class="row g-4">
-                    {% if properties %}
-                        {% for prop in properties %}
-                        <div class="col-sm-12 col-md-6 col-lg-4">
-                            <div class="card">
-                                {% if prop.get('prop_image') %}
-                                    <img src="{{ url_for('static', filename='uploads/' ~ prop['prop_image']) }}" class="card-img-top" alt="{{ prop['prop_title'] }}">
-                                {% else %}
-                                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ prop['prop_title'] }}">
-                                {% endif %}
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ prop['prop_title'] }}</h5>
-                                    <p class="card-text text-muted">{{ prop['prop_location'] }} — {{ prop['prop_state'] }}</p>
-                                    <p class="card-text">{{ prop['prop_desc']|striptags|truncate(120) }}</p>
-                                    <p class="card-text fw-bold">{{ prop['prop_price'] }}</p>
-                                    <a href="{{ url_for('property_detail', property_id=prop['prop_id']) }}" class="btn btn-add-property w-100"> View Property</a>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="col-12">
-                            <p class="text-muted">No properties found.</p>
-                        </div>
-                    {% endif %}
-
-                </div>
-
-            </div>
+  <div class="property-page-wrapper fade-up">
+    <div class="container-fluid py-4 position-relative">
+      <div class="row mb-4">
+        <div class="col-12 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <a href="{{ url_for('home') }}" class="btn btn-back-previous">
+            <i class="bi bi-arrow-left me-2"></i>Back
+          </a>
+          <button type="button" id="categoryToggle" class="btn btn-outline-primary">
+            <i class="bi bi-list me-2"></i>Categories
+          </button>
         </div>
+      </div>
+
+      <div id="categoryOverlay" class="category-overlay"></div>
+
+      <aside id="categorySidebar" class="category-sidebar" aria-label="Property categories">
+        <div class="sidebar-box h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Filter Listings</h4>
+            <button type="button" id="categoryClose" class="btn btn-sm btn-outline-secondary" aria-label="Close categories">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <ul class="sidebar-links">
+            {% set all_active = selected_category_id is none %}
+            <li>
+              <a
+                href="{{ url_for('properties', category_id=None, q=(search_query if search_query else None)) }}"
+                class="category-link {% if all_active %}active{% endif %}"
+              >
+                {% if all_active %}<i class="bi bi-check2 me-2"></i>{% endif %}All Rentals ({{ all_rentals_count }})
+              </a>
+            </li>
+
+            {% for category in categories %}
+              {% set is_active = selected_category_id == category.cat_id %}
+              <li>
+                <a
+                  href="{{ url_for('properties', category_id=category.cat_id, q=(search_query if search_query else None)) }}"
+                  class="category-link {% if is_active %}active{% endif %}"
+                >
+                  {% if is_active %}<i class="bi bi-check2 me-2"></i>{% endif %}{{ category.cat_name }} ({{ category_counts.get(category.cat_id, 0) }})
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </aside>
+
+      <div class="property-content">
+        <div class="row align-items-center mb-4 g-3">
+          <div class="col-12 col-md-8">
+            <form method="GET" action="{{ url_for('properties') }}" class="d-flex flex-column flex-sm-row gap-2">
+              <input type="text" name="q" class="form-control" value="{{ search_query }}" placeholder="Search by location, title, or type...">
+              {% if selected_category_id is not none %}
+                <input type="hidden" name="category_id" value="{{ selected_category_id }}">
+              {% endif %}
+              <button type="submit" class="btn btn-primary px-4">Search</button>
+            </form>
+          </div>
+          <div class="col-12 col-md-4">
+            <a href="{{ url_for('post_property') }}" class="btn btn-add-property w-100">+ Add Property</a>
+          </div>
+
+          {% if selected_category_id is not none or search_query %}
+            <div class="col-12">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="small text-muted">Showing:</span>
+                <span class="badge text-bg-light border">{{ selected_category }}</span>
+                {% if search_query %}
+                  <span class="badge text-bg-light border">Search: {{ search_query }}</span>
+                {% endif %}
+                <a href="{{ url_for('properties') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <div id="propertyResults" class="row g-4 property-results fade-up">
+          {% if properties %}
+            {% for prop in properties %}
+              <div class="col-sm-12 col-md-6 col-lg-4">
+                <div class="card h-100 border-0 property-card property-card-clickable" role="button" data-detail-url="{{ url_for('property_detail', property_id=prop['prop_id']) }}">
+                  {% if prop.get('cover_image') %}
+                    <img src="{{ url_for('static', filename='uploads/' ~ prop['cover_image']) }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
+                  {% else %}
+                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
+                  {% endif %}
+                  <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                      <h5 class="card-title mb-0">{{ prop['prop_title'] }}</h5>
+                      <span class="badge bg-success-subtle text-success">{{ prop.get('listing_type') or 'Active' }}</span>
+                    </div>
+                    <p class="card-text text-muted mb-2">{{ prop['prop_location'] }}{% if prop.get('prop_state') %} - {{ prop['prop_state'] }}{% endif %}</p>
+                    <p class="card-text mb-2"><strong>Type:</strong> {{ prop.get('prop_type') or 'Property' }}</p>
+                    <p class="card-text mb-3">{{ prop.get('short_desc') or (prop.get('prop_desc')|striptags|truncate(120)) }}</p>
+                    <p class="card-text fw-bold text-primary mb-3">{{ prop['prop_price'] }}</p>
+                    <a href="{{ url_for('property_detail', property_id=prop['prop_id']) }}" class="btn btn-add-property w-100 mt-auto" onclick="event.stopPropagation();">View Details</a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="col-12">
+              <div class="empty-state-box">
+                <i class="bi bi-house-door empty-state-icon"></i>
+                <h4 class="mb-2">{{ empty_message or 'No properties listed in this category.' }}</h4>
+                <p class="text-muted mb-3">{{ empty_subtext or 'Be the first to post one.' }}</p>
+                <a href="{{ url_for('post_property') }}" class="btn btn-primary">Post a Property</a>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
-     <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  </div>
+
+  <script>
+    const categoryToggle = document.getElementById('categoryToggle');
+    const categoryClose = document.getElementById('categoryClose');
+    const categorySidebar = document.getElementById('categorySidebar');
+    const categoryOverlay = document.getElementById('categoryOverlay');
+    const categoryLinks = document.querySelectorAll('.category-link');
+    const propertyCards = document.querySelectorAll('.property-card-clickable');
+
+    function setSidebarState(isOpen) {
+      categorySidebar.classList.toggle('open', isOpen);
+      categoryOverlay.classList.toggle('show', isOpen);
+      document.body.classList.toggle('sidebar-open', isOpen);
+    }
+
+    if (categoryToggle) {
+      categoryToggle.addEventListener('click', () => {
+        const willOpen = !categorySidebar.classList.contains('open');
+        setSidebarState(willOpen);
+      });
+    }
+
+    if (categoryClose) {
+      categoryClose.addEventListener('click', () => setSidebarState(false));
+    }
+
+    if (categoryOverlay) {
+      categoryOverlay.addEventListener('click', () => setSidebarState(false));
+    }
+
+    categoryLinks.forEach((link) => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 991) {
+          setSidebarState(false);
+        }
+      });
+    });
+
+    propertyCards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const detailUrl = card.dataset.detailUrl;
+        if (detailUrl) {
+          window.location.href = detailUrl;
+        }
+      });
+    });
+  </script>
 
 
 <hr>
@@ -119,7 +213,7 @@
 
     
   
-    <button class="btn btn-scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'});" arial-label=""back to top>
+    <button class="btn btn-scroll-top" onclick="window.scrollTo({top:0, behavior:'smooth'});" aria-label="Back to top">
     <svg xmlns="http://www.w3.org/2000/svg" width="60" height="80" fill="currentColor" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
         <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8m15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707z"/>
     </svg>

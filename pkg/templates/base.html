@@ -13,114 +13,98 @@
   <title>{% block title %}KayHomes{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Cormorant+SC:wght@300;400;500;600;700&family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-  <link rel="icon" href="{{ url_for('static', filename='favicon_io/favicon.ico') }}" sizes="16x16" type="image/png">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon_io/apple-touch-icon.png') }}">
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon_io/favicon-32x32.png') }}">
-  <link rel="manifest" href="{{ url_for('static', filename='favicon_io/site.webmanifest') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
 </head>
 <body>
 
   {% include 'header.html' %}
 
+  <div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
   {% block main_content %}{% endblock %}
 
   <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
-  <div class="bg-danger py-3 text-white">
-    <div class="container d-flex flex-column flex-md-row justify-content-between  align-items-center gap-3">
-      <h5 class="mb-0 fw-semibold text-center text-md-start fs-6">Are you in search of a property or an agent? List your property for FREE.</h5>
-      <a href="#" class="btn btn-outline-light px-4 py-2 fw-bold btn-sm">Register Now!</a>
+  {% set is_logged_in = session.get('user_id') %}
+  <div class="site-cta py-4">
+    <div class="container d-flex flex-column flex-md-row {% if not is_logged_in %}justify-content-between{% else %}justify-content-center{% endif %} align-items-center gap-3">
+      <h5 class="mb-0 fw-semibold text-center text-md-start cta-heading">Looking for trusted property options or a reliable listing agent?</h5>
+      {% if not is_logged_in %}
+        <a href="{{ url_for('register') }}" class="btn btn-light px-4 py-2 fw-bold">Create User</a>
+      {% endif %}
     </div>
   </div>
 
-  <footer class="bg-light py-5 border-top ">
+  <footer class="site-footer py-5">
     <div class="container">
       <div class="row g-4">
-
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small"> About Us</h6>
-            <p class="small text-muted th-base mb-3">
-              kayHomes is a leading property website in Nigeria with property listings for rent and leaase. KayHomes is a premier real estate and property platform providing modern housing solutions. <br>
-              We offer home seekers an easy way to find premium rental properties and modern apartments tailored
-              specifically for luxury and everyday comfort.
-            </p>
-            <a href="{{ url_for('about') }}" class="btn btn-danger btn-sm px-3 rounded-1 mb-4" style="font-size: 0.75rem;">Learn more</a>
-
-            <h6 class="text-uppercase fw-bold text-dark mb-2 small">Advertise With Us </h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Advertise Your Property</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Featured Real Estate companies</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Place Banner Adverts</a></li>
-            </ul>
+          <div class="col-12 col-lg-4">
+            <a class="d-inline-block mb-3" href="{{ url_for('home') }}">
+              <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
+            </a>
+            <p class="mb-3">KayHomes helps renters and homeowners discover premium listings with trusted agents, transparent details, and a seamless discovery journey.</p>
+            <p class="small mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Abuja, Nigeria</p>
+            <p class="small mb-0"><i class="bi bi-telephone-fill me-2"></i>+234 801 234 5678</p>
+            <p class="small mb-0"><i class="bi bi-envelope-fill me-2"></i>hello@kayhomes.ng</p>
           </div>
-          
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3  small">Market Trends</h6>
-            <ul class="list-unstyled mb-4 small">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Property Demand Trends</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Average Propert Prices</a></li>
+
+          <div class="col-6 col-lg-2">
+            <h6 class="fw-bold mb-3">Quick Links</h6>
+            <ul class="list-unstyled small mb-0 d-grid gap-2">
+              <li><a href="{{ url_for('home') }}">Home</a></li>
+              <li><a href="{{ url_for('about') }}">About Us</a></li>
+              {% if session.get('user_id') %}
+                <li><a href="{{ url_for('properties') }}">Properties</a></li>
+                <li><a href="{{ url_for('contact') }}">Contact</a></li>
+              {% endif %}
             </ul>
           </div>
 
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Popular Property</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats for rent in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for lease in Abuja</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Land for lease in Abuja</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Mini-flats for rent in Abuja</a></li>
-            </ul>
-          </div>  
-            
-          <div class="col-sm-12 col-md-3"> 
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Properties For Rent</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Commercial properties for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Flats & apartments for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">House for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Mini flat for rent</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Self-contained for rent</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Studio apartments for rent</a></li>
+          <div class="col-6 col-lg-3">
+            <h6 class="fw-bold mb-3">Property Types</h6>
+            <ul class="list-unstyled small mb-0 d-grid gap-2">
+              <li><a href="#">Apartments</a></li>
+              <li><a href="#">Duplexes</a></li>
+              <li><a href="#">Commercial Spaces</a></li>
+              <li><a href="#">Short Lets</a></li>
             </ul>
           </div>
 
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Follow Us</h6>
-            <div class="d-flex gap-2 mb-4">
-              <a href="#"><img src="{{ url_for('static', filename='images/fb.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="facebook image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/x.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="x image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/tk.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="Tiktok image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/yt.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="youtube image icon"></a>
-              <a href="#"><img src="{{ url_for('static', filename='images/in.png') }}" style="width: 32px;  height: 32px;object-fit: contain;" alt="linked-in image icon"></a>
+          <div class="col-12 col-lg-3">
+            <h6 class="fw-bold mb-3">Follow Us</h6>
+            <div class="d-flex gap-2 mb-3">
+              <a href="#" class="social-pill" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+              <a href="#" class="social-pill" aria-label="X"><i class="bi bi-twitter-x"></i></a>
+              <a href="#" class="social-pill" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+              <a href="#" class="social-pill" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
             </div>
+            {% if session.get('user_id') %}
+              <a href="{{ url_for('post_property') }}" class="btn btn-primary btn-sm">List a Property</a>
+            {% else %}
+              <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Sign In to List</a>
+            {% endif %}
           </div>
-      
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Rental Agents</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Lagos</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Leasing agents in Abuja</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Leasing agents in other states</a></li>
-            </ul>
-          </div>
-
-          <div class="col-sm-12 col-md-3">
-            <h6 class="text-uppercase fw-bold text-dark mb-3 small">Tenant tools</h6>
-            <ul class="list-unstyled small mb-0">
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Neighborhood Guide</a></li>
-              <li class="mb-2"><a href="#" class="text-muted text-decoration-none">MoveMe (relocation help)</a></li>
-              <li><a href="#" class="text-muted text-decoration-none">Tenant rights & policy</a></li>
-            </ul>
-          </div>
-
         </div>
       </div>
-      <hr>
-        <div class="text-center mt-4 text-muted">© 2026 KayHomes. All rights reserved.</div>
+      <hr class="my-4">
+      <div class="text-center text-muted small">© 2026 KayHomes. All rights reserved.</div>
     </footer>
 
 </body>

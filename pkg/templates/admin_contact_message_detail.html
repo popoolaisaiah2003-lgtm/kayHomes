@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}View Contact Message - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">View Contact Message</h2>
+      <p class="text-muted mb-0">Full details for the selected enquiry.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin_contact_messages') }}" class="btn btn-outline-secondary btn-sm">Back to Messages</a>
+      <form method="POST" action="{{ url_for('admin_mark_contact_message_replied', message_id=message.message_id) }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+        <button type="submit" class="btn btn-outline-success btn-sm">Mark as Replied</button>
+      </form>
+      <form method="POST" action="{{ url_for('admin_delete_contact_message', message_id=message.message_id) }}" class="d-inline" onsubmit="return confirm('Delete this contact message? This action cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-lg-5">
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <h4 class="mb-0">{{ message.subject or 'No subject' }}</h4>
+            {% if message.status == 'Unread' %}
+              <span class="badge bg-warning text-dark">Unread</span>
+            {% elif message.status == 'Read' %}
+              <span class="badge bg-info text-dark">Read</span>
+            {% else %}
+              <span class="badge bg-success">Replied</span>
+            {% endif %}
+          </div>
+          <div class="bg-light rounded p-4">
+            <p class="mb-0" style="white-space: pre-wrap;">{{ message.message }}</p>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="bg-light rounded p-4 h-100">
+            <h5 class="fw-semibold mb-3">Message Details</h5>
+            <p class="mb-2"><strong>Name:</strong> {{ message.name }}</p>
+            <p class="mb-2"><strong>Email:</strong> {{ message.email }}</p>
+            <p class="mb-2"><strong>Phone:</strong> {{ message.phone or '-' }}</p>
+            <p class="mb-2"><strong>Date Submitted:</strong> {{ message.created_at.strftime('%b %d, %Y %I:%M %p') if message.created_at and message.created_at.strftime is defined else message.created_at }}</p>
+            <p class="mb-0"><strong>Status:</strong> {{ message.status }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

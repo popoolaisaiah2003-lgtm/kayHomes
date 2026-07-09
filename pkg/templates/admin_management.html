@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Management - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">Admin Management</h2>
+      <p class="text-muted mb-0">Manage every administrator stored in the database.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin_create_admin') }}" class="btn btn-primary btn-sm">Create Admin Account</a>
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <form method="GET" action="{{ url_for('admin_management') }}" class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6 col-lg-5">
+          <label class="form-label small text-muted">Search</label>
+          <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Search by name, username, or email">
+        </div>
+        <div class="col-md-4 col-lg-3">
+          <label class="form-label small text-muted">Status</label>
+          <select name="status" class="form-select">
+            <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-2 col-lg-2 d-grid">
+          <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+        <div class="col-md-12 col-lg-2 d-grid">
+          <a href="{{ url_for('admin_management') }}" class="btn btn-outline-secondary">Reset</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Profile Photo</th>
+              <th>Full Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Date Created</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if admins %}
+              {% for admin in admins %}
+                <tr>
+                  <td>
+                    {% if admin.profile_image %}
+                      <img src="{{ url_for('static', filename=admin.profile_image) }}" alt="Admin profile" class="rounded-circle" style="width:48px; height:48px; object-fit:cover;">
+                    {% else %}
+                      <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center" style="width:48px; height:48px;">
+                        <i class="bi bi-person-fill text-secondary"></i>
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td>{{ admin.first_name }} {{ admin.last_name }}</td>
+                  <td>{{ admin.username }}</td>
+                  <td>{{ admin.email }}</td>
+                  <td>{{ admin.phone or '-' }}</td>
+                  <td>
+                    {% if admin.status == 'Active' %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if admin.created_at %}
+                      {{ admin.created_at.strftime('%b %d, %Y') if admin.created_at.strftime is defined else admin.created_at }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+                      <a href="{{ url_for('admin_view_admin', admin_id=admin.admin_id) }}" class="btn btn-outline-primary btn-sm">View</a>
+                      <a href="{{ url_for('admin_edit_admin', admin_id=admin.admin_id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
+                      <a href="{{ url_for('admin_reset_admin_password', admin_id=admin.admin_id) }}" class="btn btn-outline-success btn-sm">Reset Password</a>
+                      <form method="POST" action="{{ url_for('admin_delete_admin', admin_id=admin.admin_id) }}" onsubmit="return confirm('Delete this admin account? This action cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" {% if session.get('admin_id') == admin.admin_id %}disabled{% endif %}>Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-5">
+                  <div class="d-flex flex-column align-items-center gap-2 text-muted">
+                    <i class="bi bi-shield-lock display-6"></i>
+                    <div class="fw-semibold">No administrators found.</div>
+                  </div>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

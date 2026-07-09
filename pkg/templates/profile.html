@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5">
+  <div class="row g-3 mb-4 fade-up">
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Total Properties</div>
+            <h4 class="mb-0">{{ total_properties|default(0) }}</h4>
+          </div>
+          <i class="bi bi-house-door-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Active Listings</div>
+            <h4 class="mb-0">{{ active_listings|default(total_properties|default(0)) }}</h4>
+          </div>
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-accent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Favorites</div>
+            <h4 class="mb-0">{{ favorites_count|default(0) }}</h4>
+          </div>
+          <i class="bi bi-heart-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-danger">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Messages</div>
+            <h4 class="mb-0">{{ unread_messages|default(0) }}</h4>
+          </div>
+          <i class="bi bi-chat-left-text-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body p-4 text-center">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 84px; height: 84px; font-size: 32px;">
+            <i class="bi bi-person-fill"></i>
+          </div>
+          <h4 class="fw-bold mb-1">{{ user.user_fname }} {{ user.user_lname }}</h4>
+          <p class="text-muted mb-3">{{ user.user_email }}</p>
+          <span class="badge bg-success-subtle text-success px-3 py-2">Verified Member</span>
+          <div class="mt-4 small text-muted text-start">
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span>Member since</span>
+              <strong>{{ user.user_regdate.strftime('%b %Y') if user.user_regdate else 'Recently joined' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between py-2">
+              <span>Phone</span>
+              <strong>{{ user.user_phone or 'Not added' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h3 class="fw-bold mb-1">Profile</h3>
+              <p class="text-muted mb-0">Manage your personal information and account details.</p>
+            </div>
+            <a href="{{ url_for('account_settings') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-gear me-2"></i>Account Settings
+            </a>
+          </div>
+
+          <form method="post">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">First Name</label>
+                <input type="text" class="form-control" name="first_name" value="{{ user.user_fname }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Last Name</label>
+                <input type="text" class="form-control" name="last_name" value="{{ user.user_lname }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="email" value="{{ user.user_email }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" name="phone" value="{{ user.user_phone or '' }}">
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="form-label">Profile Picture</label>
+              <div class="border rounded p-3 text-muted">
+                <i class="bi bi-image me-2"></i>Profile photo upload will be available soon.
+              </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-2"></i>Save Changes
+              </button>
+              <a href="{{ url_for('my_listings') }}" class="btn btn-outline-primary">View My Listings</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

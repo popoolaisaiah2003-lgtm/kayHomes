@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}My Listings - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+    <div>
+      <h2 class="fw-bold mb-1">My Listings</h2>
+      <p class="text-muted mb-0">Manage the properties you have posted on KayHomes.</p>
+    </div>
+    <a href="{{ url_for('post_property') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-2"></i>Post a Property
+    </a>
+  </div>
+
+  {% if listings %}
+    <div class="row g-4">
+      {% for listing in listings %}
+        <div class="col-lg-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="row g-0 h-100">
+              <div class="col-md-5">
+                {% if listing.image %}
+                  <img src="{{ url_for('static', filename='uploads/' ~ listing.image) }}" alt="{{ listing.prop_title }}" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover; min-height: 220px;">
+                {% else %}
+                  <div class="h-100 d-flex align-items-center justify-content-center bg-light text-muted rounded-start" style="min-height: 220px;">
+                    <i class="bi bi-image fs-1"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-7">
+                <div class="card-body d-flex flex-column h-100">
+                  <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                      <h5 class="fw-bold mb-1">{{ listing.prop_title }}</h5>
+                      <p class="text-muted small mb-2">{{ listing.prop_location }}</p>
+                    </div>
+                    <span class="badge bg-success-subtle text-success">{{ listing.listing_type or 'Active' }}</span>
+                  </div>
+                  <p class="fw-semibold text-primary mb-3">₦{{ "{:,.0f}".format(listing.prop_price) }}</p>
+                  <div class="small text-muted mb-3">
+                    <div class="d-flex justify-content-between py-1"><span>Status</span><strong>Active</strong></div>
+                    <div class="d-flex justify-content-between py-1"><span>Inquiries</span><strong>{{ listing.inquiry_count }}</strong></div>
+                    <div class="d-flex justify-content-between py-1"><span>Posted</span><strong>{{ listing.created_at.strftime('%b %d, %Y') if listing.created_at else 'Recently posted' }}</strong></div>
+                  </div>
+                  <div class="mt-auto d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('property_detail', property_id=listing.prop_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i>View</a>
+                    <a href="{{ url_for('edit_listing', property_id=listing.prop_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil-square me-1"></i>Edit</a>
+                    <form method="post" action="{{ url_for('delete_listing', property_id=listing.prop_id) }}" onsubmit="return confirm('Delete this listing permanently?');" class="d-inline">
+                      <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card shadow-sm border-0 text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-house-door display-4 text-muted mb-3"></i>
+        <h4 class="fw-bold mb-2">No listings yet</h4>
+        <p class="text-muted mb-4">You have not posted any properties. Start by sharing your first listing with potential buyers and renters.</p>
+        <a href="{{ url_for('post_property') }}" class="btn btn-primary">Post Your First Property</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

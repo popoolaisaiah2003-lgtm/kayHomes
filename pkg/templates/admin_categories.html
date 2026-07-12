@@ -34,7 +34,7 @@
                 <tr>
                   <td class="fw-semibold">{{ category.cat_name }}</td>
                   <td>{{ category.cat_desc or '-' }}</td>
-                  <td><span class="badge bg-light text-dark border">{{ category.property_count }}</span></td>
+                  <td><span class="badge bg-kh-soft text-kh-heading border">{{ category.property_count }}</span></td>
                   <td>
                     {% if category.cat_date %}
                       {{ category.cat_date.strftime('%b %d, %Y') if category.cat_date.strftime is defined else category.cat_date }}

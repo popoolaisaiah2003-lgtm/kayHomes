@@ -22,7 +22,7 @@
             {% for msg in messages %}
               {% set is_sender = msg['sender_id'] == current_user %}
               <div class="d-flex mb-3 {% if is_sender %}justify-content-end{% else %}justify-content-start{% endif %}">
-                <div class="p-3 rounded-3 {% if is_sender %}bg-primary text-white text-end{% else %}bg-light text-dark text-start{% endif %}" style="max-width: 75%;">
+                <div class="p-3 rounded-3 {% if is_sender %}bg-primary text-white text-end{% else %}bg-kh-soft text-kh-heading text-start{% endif %}" style="max-width: 75%;">
                   <div>{{ msg['message'] }}</div>
                   <div class="text-muted small mt-2">{{ msg['created_at'].strftime('%b %d, %Y %I:%M %p') }}</div>
                 </div>

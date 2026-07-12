@@ -29,19 +29,19 @@
           <div class="d-flex align-items-center gap-2 mb-3">
             <h4 class="mb-0">{{ message.subject or 'No subject' }}</h4>
             {% if message.status == 'Unread' %}
-              <span class="badge bg-warning text-dark">Unread</span>
+              <span class="badge bg-warning text-kh-ink">Unread</span>
             {% elif message.status == 'Read' %}
-              <span class="badge bg-info text-dark">Read</span>
+              <span class="badge bg-info text-kh-ink">Read</span>
             {% else %}
               <span class="badge bg-success">Replied</span>
             {% endif %}
           </div>
-          <div class="bg-light rounded p-4">
+          <div class="bg-kh-soft rounded p-4">
             <p class="mb-0" style="white-space: pre-wrap;">{{ message.message }}</p>
           </div>
         </div>
         <div class="col-lg-4">
-          <div class="bg-light rounded p-4 h-100">
+          <div class="bg-kh-soft rounded p-4 h-100">
             <h5 class="fw-semibold mb-3">Message Details</h5>
             <p class="mb-2"><strong>Name:</strong> {{ message.name }}</p>
             <p class="mb-2"><strong>Email:</strong> {{ message.email }}</p>

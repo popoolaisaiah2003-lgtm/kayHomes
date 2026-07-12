@@ -90,8 +90,8 @@
           {% set current_count = existing_images|length if existing_images else 0 %}
           {% set remaining = max_property_images - current_count %}
           <div class="mt-2">
-            <span class="badge bg-light text-dark border">Current images: {{ current_count }}</span>
-            <span class="badge bg-light text-dark border">You can upload: {{ remaining if remaining > 0 else 0 }} more</span>
+            <span class="badge bg-kh-soft text-kh-heading border">Current images: {{ current_count }}</span>
+            <span class="badge bg-kh-soft text-kh-heading border">You can upload: {{ remaining if remaining > 0 else 0 }} more</span>
           </div>
 
           <div id="imageValidationError" class="invalid-feedback d-block" style="display:none !important;"></div>

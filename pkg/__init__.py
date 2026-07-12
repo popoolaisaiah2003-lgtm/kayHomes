@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_mail import Mail
 from pkg.models import db
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
@@ -13,6 +14,13 @@ app.config['SECRET_KEY'] = 'securedkey'
 if not app.config.get('SQLALCHEMY_DATABASE_URI'):
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/kayhomes'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.setdefault('MAIL_SERVER', '127.0.0.1')
+app.config.setdefault('MAIL_PORT', 25)
+app.config.setdefault('MAIL_USE_TLS', False)
+app.config.setdefault('MAIL_USE_SSL', False)
+app.config.setdefault('MAIL_USERNAME', None)
+app.config.setdefault('MAIL_PASSWORD', None)
+app.config.setdefault('MAIL_DEFAULT_SENDER', 'noreply@kayhomes.local')
 
 # Uploads
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -22,6 +30,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
+mail = Mail(app)
 
 
 def ensure_admin_schema_compatibility():
@@ -250,6 +259,35 @@ def ensure_category_schema_compatibility():
             print(f'Skipping category schema compatibility due to database error: {exc}')
 
 
+def ensure_user_theme_schema_compatibility():
+    """Ensure users table has a theme column with safe default values."""
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            if not inspector.has_table('users'):
+                return
+
+            columns = {col['name'] for col in inspector.get_columns('users')}
+            schema_changed = False
+
+            if 'theme' not in columns:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN theme VARCHAR(20) NOT NULL DEFAULT 'light'"))
+                schema_changed = True
+
+            db.session.execute(
+                text("UPDATE users SET theme = 'light' WHERE theme IS NULL OR theme NOT IN ('light', 'dark')")
+            )
+
+            if schema_changed:
+                db.session.commit()
+            else:
+                db.session.flush()
+                db.session.commit()
+        except (OperationalError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            print(f'Skipping user theme schema compatibility due to database error: {exc}')
+
+
 def initialize_database():
     """Optional runtime initializer. Call explicitly after app import when needed."""
     with app.app_context():
@@ -257,9 +295,13 @@ def initialize_database():
             db.create_all()
             ensure_admin_schema_compatibility()
             ensure_category_schema_compatibility()
+            ensure_user_theme_schema_compatibility()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             print(f'Database initialization skipped: {exc}')
+
+
+ensure_user_theme_schema_compatibility()
 
 
 from pkg import user_routes, admin_routes

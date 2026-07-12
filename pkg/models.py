@@ -13,7 +13,23 @@ class User(db.Model):
     user_email = db.Column(db.String(120), unique=True, nullable=False)
     user_pwd = db.Column(db.String(255), nullable=False)
     user_phone = db.Column(db.String(20))
+    theme = db.Column(db.String(20), nullable=False, default='light')
     user_regdate = db.Column(db.DateTime)
+
+    password_reset_tokens = relationship('PasswordResetToken', back_populates='user', cascade='all, delete-orphan')
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False, index=True)
+    token = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
+
+    user = relationship('User', back_populates='password_reset_tokens')
 
 
 class Admin(db.Model):

@@ -102,9 +102,9 @@
                   <td>
                     {% set status_class = 'bg-secondary' %}
                     {% if message.status == 'Unread' %}
-                      {% set status_class = 'bg-warning text-dark' %}
+                      {% set status_class = 'bg-warning text-kh-ink' %}
                     {% elif message.status == 'Read' %}
-                      {% set status_class = 'bg-info text-dark' %}
+                      {% set status_class = 'bg-info text-kh-ink' %}
                     {% elif message.status == 'Replied' %}
                       {% set status_class = 'bg-success' %}
                     {% endif %}

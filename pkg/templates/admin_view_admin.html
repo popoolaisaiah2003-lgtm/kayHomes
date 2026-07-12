@@ -10,7 +10,6 @@
       <p class="text-muted mb-0">Detailed administrator account profile.</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('admin_management') }}" class="btn btn-outline-secondary btn-sm">Back</a>
       <a href="{{ url_for('admin_edit_admin', admin_id=admin.admin_id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
       <a href="{{ url_for('admin_reset_admin_password', admin_id=admin.admin_id) }}" class="btn btn-outline-success btn-sm">Reset Password</a>
     </div>
@@ -23,7 +22,7 @@
           {% if admin.profile_image %}
             <img src="{{ url_for('static', filename=admin.profile_image) }}" alt="Admin profile" class="rounded-circle shadow-sm" style="width:160px; height:160px; object-fit:cover;">
           {% else %}
-            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" style="width:160px; height:160px;">
+            <div class="rounded-circle bg-kh-soft d-inline-flex align-items-center justify-content-center shadow-sm" style="width:160px; height:160px;">
               <i class="bi bi-person-fill text-secondary display-4"></i>
             </div>
           {% endif %}

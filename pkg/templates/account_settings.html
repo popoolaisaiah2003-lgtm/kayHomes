@@ -28,6 +28,43 @@
           </div>
 
           <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+              <div>
+                <h5 class="fw-semibold mb-1">Appearance</h5>
+                <p class="text-muted small mb-0">Choose how KayHomes looks across your account.</p>
+              </div>
+              <span id="themeCurrentBadge" class="badge theme-badge-soft border text-capitalize">{{ user.theme or 'light' }} mode</span>
+            </div>
+
+            <div class="border rounded p-3">
+              <h6 class="fw-semibold mb-3">Theme</h6>
+              {% set selected_theme = user.theme if user.theme in ['light', 'dark'] else 'light' %}
+              <div class="d-flex flex-column flex-md-row gap-3">
+                <label class="theme-option card border-0 shadow-sm p-3 mb-0 flex-fill" role="button">
+                  <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="theme" id="themeLight" value="light" {% if selected_theme == 'light' %}checked{% endif %}>
+                    <span class="form-check-label d-flex align-items-center gap-2" for="themeLight">
+                      <span aria-hidden="true">☀️</span>
+                      <span>Light Mode</span>
+                    </span>
+                  </div>
+                </label>
+
+                <label class="theme-option card border-0 shadow-sm p-3 mb-0 flex-fill" role="button">
+                  <div class="form-check mb-0">
+                    <input class="form-check-input" type="radio" name="theme" id="themeDark" value="dark" {% if selected_theme == 'dark' %}checked{% endif %}>
+                    <span class="form-check-label d-flex align-items-center gap-2" for="themeDark">
+                      <span aria-hidden="true">🌙</span>
+                      <span>Dark Mode</span>
+                    </span>
+                  </div>
+                </label>
+              </div>
+              <p id="themeStatusText" class="small text-muted mt-3 mb-0">Theme updates are saved automatically.</p>
+            </div>
+          </div>
+
+          <div class="border rounded p-3 mb-3">
             <h5 class="fw-semibold mb-2">Change Password</h5>
             <p class="text-muted small mb-3">Update your password to keep your account secure.</p>
             <form method="post" class="row g-2 align-items-end">
@@ -102,4 +139,68 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var themeInputs = document.querySelectorAll('input[name="theme"]');
+    var statusText = document.getElementById('themeStatusText');
+    var badge = document.getElementById('themeCurrentBadge');
+    var activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+
+    function applyTheme(themeValue) {
+      document.documentElement.setAttribute('data-theme', themeValue);
+      if (badge) {
+        badge.textContent = themeValue + ' mode';
+      }
+    }
+
+    function setStatus(message, tone) {
+      if (!statusText) {
+        return;
+      }
+      statusText.textContent = message;
+      statusText.classList.remove('text-muted', 'text-success', 'text-danger');
+      statusText.classList.add(tone || 'text-muted');
+    }
+
+    themeInputs.forEach(function (input) {
+      input.addEventListener('change', function () {
+        var selectedTheme = input.value;
+        var previousTheme = activeTheme;
+
+        applyTheme(selectedTheme);
+        setStatus('Saving theme preference...', 'text-muted');
+
+        fetch("{{ url_for('update_theme') }}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: new URLSearchParams({ theme: selectedTheme }).toString()
+        })
+          .then(function (response) {
+            return response.json().then(function (payload) {
+              return { ok: response.ok, payload: payload };
+            });
+          })
+          .then(function (result) {
+            if (!result.ok || !result.payload.success) {
+              throw new Error((result.payload && result.payload.message) || 'Unable to save theme.');
+            }
+            activeTheme = selectedTheme;
+            setStatus('Theme updated successfully.', 'text-success');
+          })
+          .catch(function (error) {
+            applyTheme(previousTheme);
+            var previousInput = document.querySelector('input[name="theme"][value="' + previousTheme + '"]');
+            if (previousInput) {
+              previousInput.checked = true;
+            }
+            setStatus(error.message || 'Unable to save theme preference right now.', 'text-danger');
+          });
+      });
+    });
+  })();
+</script>
 {% endblock %}

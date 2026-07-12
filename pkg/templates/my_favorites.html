@@ -21,7 +21,7 @@
                 {% if property.image %}
                   <img src="{{ url_for('static', filename='uploads/' ~ property.image) }}" alt="{{ property.prop_title }}" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover; min-height: 220px;">
                 {% else %}
-                  <div class="h-100 d-flex align-items-center justify-content-center bg-light text-muted rounded-start" style="min-height: 220px;">
+                  <div class="h-100 d-flex align-items-center justify-content-center bg-kh-soft text-muted rounded-start" style="min-height: 220px;">
                     <i class="bi bi-image fs-1"></i>
                   </div>
                 {% endif %}

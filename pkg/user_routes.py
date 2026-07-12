@@ -1,12 +1,14 @@
 from flask import render_template, request, redirect, url_for, session, flash, abort, jsonify
+from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from pkg import app, ensure_category_schema_compatibility
-from pkg.models import Category, ContactMessage, db, User, Property
+from pkg import app, ensure_category_schema_compatibility, mail
+from pkg.forms import ForgotPasswordForm, ResetPasswordForm
+from pkg.models import Category, ContactMessage, PasswordResetToken, db, User, Property
 import os, secrets
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func
 from sqlalchemy.orm import joinedload
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from email_validator import EmailNotValidError, validate_email
 
@@ -22,6 +24,31 @@ def get_current_user():
     return User.query.get(user_id)
 
 
+def _normalized_theme(value):
+    theme_value = (value or '').strip().lower()
+    return theme_value if theme_value in {'light', 'dark'} else 'light'
+
+
+def get_current_theme():
+    default_theme = 'light'
+    user_id = session.get('user_id')
+    if not user_id:
+        return default_theme
+
+    session_theme = _normalized_theme(session.get('theme'))
+    if session_theme in {'light', 'dark'} and session.get('theme'):
+        return session_theme
+
+    try:
+        user = db.session.get(User, user_id)
+        theme_value = _normalized_theme(user.theme if user else default_theme)
+        session['theme'] = theme_value
+        return theme_value
+    except Exception as e:
+        app.logger.exception('Unable to load theme for user %s: %s', user_id, e)
+        return default_theme
+
+
 def _store_next_url():
     next_url = request.full_path if request.query_string else request.path
     if next_url.endswith('?'):
@@ -34,6 +61,29 @@ def _redirect_after_auth(default_endpoint='home'):
     if next_url:
         return redirect(next_url)
     return redirect(url_for(default_endpoint))
+
+
+def _send_password_reset_email(user, token):
+    reset_link = url_for('reset_password', token=token, _external=True)
+    sender = app.config.get('MAIL_DEFAULT_SENDER') or 'noreply@kayhomes.local'
+
+    message = Message(
+        subject='KayHomes Password Reset Request',
+        recipients=[user.user_email],
+        sender=sender,
+        body=(
+            f"Hello {user.user_fname},\n\n"
+            "We received a request to reset your KayHomes account password.\n\n"
+            "Use the link below to reset your password:\n"
+            f"{reset_link}\n\n"
+            "This link expires in 1 hour.\n\n"
+            "If you did not request this password reset, please ignore this email.\n"
+            "Your account will remain secure.\n\n"
+            "KayHomes Team"
+        )
+    )
+    mail.send(message)
+    return reset_link
 
 
 def get_table_columns(table_name):
@@ -315,7 +365,10 @@ def inject_unread_count():
             ).scalar() or 0
         except Exception:
             unread_count = 0
-    return {'unread_count': unread_count}
+    return {
+        'unread_count': unread_count,
+        'current_theme': get_current_theme(),
+    }
 
 
 @app.route('/')
@@ -1035,12 +1088,104 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        session['user_id'] = new_user.user_id
-        session['user_name'] = new_user.user_fname
-        flash('Registration successful.', 'success')
-        return _redirect_after_auth('properties')
+        flash('Registration successful! Please log in to continue.', 'success')
+        return redirect(url_for('login'))
 
     return render_template('register.html', title='Register')
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    generic_message = 'If an account with that email exists, a password reset link has been sent.'
+
+    if form.validate_on_submit():
+        email = (form.email.data or '').strip().lower()
+        user = User.query.filter(func.lower(User.user_email) == email).first()
+
+        if not user:
+            flash(generic_message, 'info')
+            return redirect(url_for('forgot_password'))
+
+        token_value = secrets.token_urlsafe(48)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+
+        try:
+            PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.user_id,
+                PasswordResetToken.used.is_(False)
+            ).update({'used': True}, synchronize_session=False)
+
+            reset_token = PasswordResetToken(
+                user_id=user.user_id,
+                token=token_value,
+                expires_at=expires_at,
+                used=False,
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception('Forgot password token save failed for email %s: %s', email, e)
+            flash('Unable to process your request right now. Please try again later.', 'danger')
+            return redirect(url_for('forgot_password'))
+
+        try:
+            _send_password_reset_email(user, token_value)
+            flash(generic_message, 'info')
+        except Exception as e:
+            app.logger.exception('Forgot password email send failed for email %s: %s', email, e)
+
+            # Keep development unblocked even when SMTP is not configured.
+            if app.config.get('MAIL_SUPPRESS_SEND'):
+                reset_link = url_for('reset_password', token=token_value, _external=True)
+                app.logger.info('Password reset link for %s: %s', email, reset_link)
+                flash(generic_message, 'info')
+            else:
+                flash('Unable to send reset email right now. Please try again later.', 'danger')
+
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST' and form.errors:
+        flash('Please enter a valid email address.', 'warning')
+
+    return render_template('forgot_password.html', title='Forgot Password', form=form)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    now_utc = datetime.utcnow()
+    reset_token = PasswordResetToken.query.filter_by(token=token).first()
+
+    invalid_token = (
+        reset_token is None
+        or reset_token.used
+        or reset_token.expires_at is None
+        or reset_token.expires_at < now_utc
+        or reset_token.user is None
+    )
+
+    if invalid_token:
+        return render_template('reset_password.html', title='Reset Password', form=None, invalid_token=True), 400
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        try:
+            reset_token.user.user_pwd = generate_password_hash(form.password.data)
+            reset_token.used = True
+            db.session.commit()
+            flash('Your password has been reset successfully. Please log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            app.logger.exception('Reset password failed for token %s: %s', token, e)
+            flash('Unable to reset password right now. Please try again later.', 'danger')
+            return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST' and form.errors:
+        flash('Please correct the password fields and try again.', 'warning')
+
+    return render_template('reset_password.html', title='Reset Password', form=form, invalid_token=False, token=token)
 
 
 
@@ -1063,6 +1208,7 @@ def login():
 
             session['user_id'] = user.user_id
             session['user_name'] = user.user_fname
+            session['theme'] = _normalized_theme(getattr(user, 'theme', 'light'))
             flash('Welcome back.', 'success')
             return _redirect_after_auth('properties')
 
@@ -1335,6 +1481,28 @@ def account_settings():
         return redirect(url_for('account_settings'))
 
     return render_template('account_settings.html', title='Account Settings', user=user)
+
+
+@app.route('/settings/theme', methods=['POST'])
+@login_required
+def update_theme():
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+
+    selected_theme = _normalized_theme(request.form.get('theme'))
+    if selected_theme not in {'light', 'dark'}:
+        return jsonify({'success': False, 'message': 'Invalid theme value.'}), 400
+
+    try:
+        user.theme = selected_theme
+        db.session.commit()
+        session['theme'] = selected_theme
+        return jsonify({'success': True, 'theme': selected_theme})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Failed to update theme for user %s: %s', user.user_id, e)
+        return jsonify({'success': False, 'message': 'Unable to save theme preference right now.'}), 500
 
 
 @app.route('/listing/<int:property_id>/delete', methods=['POST'])

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ current_theme|default('light') }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +25,21 @@
 
   {% include 'header.html' %}
 
+  {% set no_back_button_endpoints = ['home', 'login', 'register', 'admin_login', 'admin_register'] %}
+  {% if request.endpoint not in no_back_button_endpoints %}
+    <div class="container pt-3 pb-0">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+        onclick="return handleBackNavigation('{{ url_for('home') }}');"
+        aria-label="Go back to previous page"
+      >
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>Back</span>
+      </button>
+    </div>
+  {% endif %}
+
   <div class="container py-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -40,6 +55,24 @@
 
   {% block main_content %}{% endblock %}
 
+  <script>
+    function handleBackNavigation(homeUrl) {
+      if (window.history.length > 1 && document.referrer) {
+        try {
+          var referrerUrl = new URL(document.referrer);
+          if (referrerUrl.origin === window.location.origin) {
+            window.history.back();
+            return false;
+          }
+        } catch (error) {
+          // Ignore malformed referrer and fall back to home.
+        }
+      }
+
+      window.location.href = homeUrl;
+      return false;
+    }
+  </script>
   <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
   {% set is_logged_in = session.get('user_id') %}

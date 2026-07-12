@@ -36,6 +36,7 @@
                 <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
               </li>
               {% if session.get('user_id') %}
+                {% set logged_in_user_first_name = session.get('user_name') or 'User' %}
                 <li class="nav-item">
                   <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
                 </li>
@@ -59,8 +60,13 @@
                     {% endif %}
                   </a>
                 </li>
-                <li class="nav-item">
-                  <a class="btn btn-primary btn-sm ms-lg-3" href="{{ url_for('logout') }}">Logout</a>
+                <li class="nav-item dropdown ms-lg-3">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Hello, {{ logged_in_user_first_name }}
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
+                  </ul>
                 </li>
               {% else %}
                 <li class="nav-item ms-3">

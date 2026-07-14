@@ -11,8 +11,12 @@ app = Flask(__name__, instance_relative_config=True)
 os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_pyfile('config.py', silent=True)
 app.config['SECRET_KEY'] = 'securedkey'
-if not app.config.get('SQLALCHEMY_DATABASE_URI'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/kayhomes'
+import os
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    "DATABASE_URL",
+    "mysql+pymysql://root:@localhost/kayhomes"
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config.setdefault('MAIL_SERVER', '127.0.0.1')
 app.config.setdefault('MAIL_PORT', 25)

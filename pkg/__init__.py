@@ -18,6 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     "mysql+pymysql://root:@localhost/kayhomes"
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 app.config.setdefault('MAIL_SERVER', '127.0.0.1')
 app.config.setdefault('MAIL_PORT', 25)
 app.config.setdefault('MAIL_USE_TLS', False)

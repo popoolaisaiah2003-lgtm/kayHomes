@@ -1,0 +1,40 @@
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases and local runtime files
+*.db
+*.sqlite3
+instance/*.db
+
+# Environment and secrets
+.env
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Virtual environments
+venv/
+.vhomes/
+env/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test/tool cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary and backup files
+*.tmp
+*.temp
+*~
+*.bak
+*.swp

@@ -10,8 +10,10 @@ app = Flask(__name__, instance_relative_config=True)
 # Load instance configuration before initializing extensions.
 os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_pyfile('config.py', silent=True)
-app.config['SECRET_KEY'] = 'securedkey'
-import os
+app.config['SECRET_KEY'] = os.environ.get(
+    "SECRET_KEY",
+    "securedkey"
+)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     "DATABASE_URL",
@@ -304,9 +306,6 @@ def initialize_database():
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             print(f'Database initialization skipped: {exc}')
-
-
-ensure_user_theme_schema_compatibility()
 
 
 from pkg import user_routes, admin_routes

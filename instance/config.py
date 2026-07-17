@@ -1,16 +1,20 @@
+import os
+
 # ---------------------------------------------------------------
 # KayHomes – Instance Configuration
 # This file is NOT committed to Git. Keep credentials here only.
 # ---------------------------------------------------------------
 
-# Original MySQL connection recovered from Git history (commit db82f69).
-# User: root | Password: (none) | Host: localhost | DB: kayhomes
-SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:@localhost/kayhomes'
+DATABASE_URL = os.getenv(
+	"DATABASE_URL",
+	"mysql+pymysql://root:@localhost/kayhomes"
+)
 
-# Uncomment and update the line above if your MySQL password has changed, e.g.:
-# SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:YOUR_PASSWORD@localhost/kayhomes'
+SQLALCHEMY_DATABASE_URI = DATABASE_URL
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+SECRET_KEY = os.getenv("SECRET_KEY", "securedkey")
 
 # Mail settings for forgot-password emails.
 # Update these values to your SMTP provider before sending real emails.
@@ -23,4 +27,4 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 # MAIL_DEFAULT_SENDER = 'KayHomes <your-email@example.com>'
 
 # Development default: don't attempt real SMTP delivery unless you configure values above.
-MAIL_SUPPRESS_SEND = True
+MAIL_SUPPRESS_SEND = os.getenv("MAIL_SUPPRESS_SEND", "true").lower() == "true"

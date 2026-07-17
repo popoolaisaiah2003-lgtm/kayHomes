@@ -20,6 +20,12 @@ venv/
 .vhomes/
 env/
 
+# Uploaded property images
+pkg/static/uploads/
+
+# User uploaded files
+pkg/static/uploads/
+
 # OS metadata
 .DS_Store
 Thumbs.db

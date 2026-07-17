@@ -9,14 +9,14 @@ app = Flask(__name__, instance_relative_config=True)
 
 # Load instance configuration before initializing extensions.
 os.makedirs(app.instance_path, exist_ok=True)
+app.config.from_object('pkg.config')
 app.config.from_pyfile('config.py', silent=True)
-app.config['SECRET_KEY'] = os.environ.get(
-    "SECRET_KEY",
-    "securedkey"
-)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'securedkey'))
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:KeaDarIgcNtOVoOWFFYuChqSrmGSYkyx@tokaido.proxy.rlwy.net:57048/railway"
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+if os.getenv('DATABASE_URL'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:@localhost/kayhomes')
+app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
 app.config.setdefault('MAIL_SERVER', '127.0.0.1')
 app.config.setdefault('MAIL_PORT', 25)
@@ -177,6 +177,12 @@ def ensure_category_schema_compatibility():
             if 'category_id' not in property_columns:
                 db.session.execute(text('ALTER TABLE property ADD COLUMN category_id INT NULL'))
                 db.session.commit()
+                inspector = inspect(db.engine)
+                property_columns = {col['name'] for col in inspector.get_columns('property')}
+
+            if 'prop_lga' not in property_columns:
+                db.session.execute(text('ALTER TABLE property ADD COLUMN prop_lga VARCHAR(120) NULL'))
+                db.session.commit()
 
             db.session.execute(
                 text(
@@ -292,6 +298,107 @@ def ensure_user_theme_schema_compatibility():
             print(f'Skipping user theme schema compatibility due to database error: {exc}')
 
 
+def ensure_runtime_tables_compatibility():
+    """Create and repair non-model tables required by user routes without data loss."""
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            dialect = db.engine.dialect.name
+
+            auto_pk = 'INTEGER PRIMARY KEY AUTOINCREMENT' if dialect == 'sqlite' else 'INT AUTO_INCREMENT PRIMARY KEY'
+            bool_type = 'INTEGER' if dialect == 'sqlite' else 'TINYINT(1)'
+            now_default = 'CURRENT_TIMESTAMP'
+
+            create_messages_sql = f'''
+                CREATE TABLE IF NOT EXISTS messages (
+                    msg_id {auto_pk},
+                    sender_id INT NOT NULL,
+                    receiver_id INT NOT NULL,
+                    property_id INT NOT NULL,
+                    message TEXT NOT NULL,
+                    is_read {bool_type} NOT NULL DEFAULT 0,
+                    created_at DATETIME NOT NULL DEFAULT {now_default}
+                )
+            '''
+            create_inquiries_sql = f'''
+                CREATE TABLE IF NOT EXISTS inquiries (
+                    inqu_id {auto_pk},
+                    inqu_mssg TEXT NULL,
+                    inqu_date DATETIME NOT NULL DEFAULT {now_default},
+                    inqu_userid INT NULL,
+                    inqu_propid INT NULL
+                )
+            '''
+            create_property_image_sql = f'''
+                CREATE TABLE IF NOT EXISTS property_image (
+                    pimg_id {auto_pk},
+                    pimg_url VARCHAR(255) NOT NULL,
+                    pimg_propid INT NOT NULL
+                )
+            '''
+
+            if not inspector.has_table('messages'):
+                db.session.execute(text(create_messages_sql))
+                db.session.commit()
+
+            if not inspector.has_table('inquiries'):
+                db.session.execute(text(create_inquiries_sql))
+                db.session.commit()
+
+            if not inspector.has_table('property_image'):
+                db.session.execute(text(create_property_image_sql))
+                db.session.commit()
+
+            inspector = inspect(db.engine)
+
+            if inspector.has_table('messages'):
+                msg_cols = {col['name'] for col in inspector.get_columns('messages')}
+                required_message_cols = {
+                    'sender_id': 'INT NOT NULL DEFAULT 0',
+                    'receiver_id': 'INT NOT NULL DEFAULT 0',
+                    'property_id': 'INT NOT NULL DEFAULT 0',
+                    'message': 'TEXT NULL',
+                    'is_read': f'{bool_type} NOT NULL DEFAULT 0',
+                    'created_at': f'DATETIME NOT NULL DEFAULT {now_default}',
+                }
+                for col_name, col_type in required_message_cols.items():
+                    if col_name not in msg_cols:
+                        db.session.execute(text(f'ALTER TABLE messages ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+
+            if inspector.has_table('inquiries'):
+                inq_cols = {col['name'] for col in inspector.get_columns('inquiries')}
+                required_inquiry_cols = {
+                    'inqu_mssg': 'TEXT NULL',
+                    'inqu_date': f'DATETIME NOT NULL DEFAULT {now_default}',
+                    'inqu_userid': 'INT NULL',
+                    'inqu_propid': 'INT NULL',
+                }
+                for col_name, col_type in required_inquiry_cols.items():
+                    if col_name not in inq_cols:
+                        db.session.execute(text(f'ALTER TABLE inquiries ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+
+            if inspector.has_table('favorites'):
+                fav_cols = {col['name'] for col in inspector.get_columns('favorites')}
+                if 'fav_userid' not in fav_cols:
+                    db.session.execute(text('ALTER TABLE favorites ADD COLUMN fav_userid INT NULL'))
+                if 'fav_propid' not in fav_cols:
+                    db.session.execute(text('ALTER TABLE favorites ADD COLUMN fav_propid INT NULL'))
+                db.session.commit()
+
+            if inspector.has_table('property_image'):
+                pimg_cols = {col['name'] for col in inspector.get_columns('property_image')}
+                if 'property_id' not in pimg_cols and 'pimg_propid' not in pimg_cols:
+                    db.session.execute(text('ALTER TABLE property_image ADD COLUMN pimg_propid INT NULL'))
+                if 'image_path' not in pimg_cols and 'pimg_url' not in pimg_cols:
+                    db.session.execute(text('ALTER TABLE property_image ADD COLUMN pimg_url VARCHAR(255) NULL'))
+                db.session.commit()
+        except (OperationalError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            print(f'Skipping runtime tables compatibility due to database error: {exc}')
+
+
 def initialize_database():
     """Optional runtime initializer. Call explicitly after app import when needed."""
     with app.app_context():
@@ -300,6 +407,7 @@ def initialize_database():
             ensure_admin_schema_compatibility()
             ensure_category_schema_compatibility()
             ensure_user_theme_schema_compatibility()
+            ensure_runtime_tables_compatibility()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             print(f'Database initialization skipped: {exc}')

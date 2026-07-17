@@ -76,6 +76,7 @@ class Property(db.Model):
     prop_price = db.Column(db.String(120), nullable=False)
     prop_location = db.Column(db.String(255), nullable=False)
     prop_state = db.Column(db.String(120), nullable=False)
+    prop_lga = db.Column(db.String(120))
     prop_address = db.Column(db.String(255), nullable=False)
     prop_userid = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.cat_id', onupdate='CASCADE', ondelete='RESTRICT'))

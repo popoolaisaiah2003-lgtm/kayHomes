@@ -316,10 +316,7 @@ def save_property_images(property_id, image_files, existing_count=0):
         db.session.commit()
         return True, None
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        print("IMAGE SAVE ERROR:", e)
+        app.logger.exception('Image save failed for property_id=%s', property_id)
 
         db.session.rollback()
 
@@ -686,7 +683,6 @@ def post_property(property_id=None):
         existing_images = get_property_images(property_id)
 
     if request.method == 'POST':
-
         token = session.pop('csrf_token', None)
         form_token = request.form.get('csrf_token')
         if not token or not form_token or token != form_token:
@@ -731,31 +727,46 @@ def post_property(property_id=None):
                 property_obj.prop_location = prop_location
                 property_obj.prop_state = prop_state
                 property_obj.prop_address = prop_address
+                if hasattr(property_obj, 'prop_lga'):
+                    property_obj.prop_lga = prop_lga
+
                 db.session.commit()
                 saved_property_id = property_obj.prop_id
 
             else:
-                property_obj = Property(
-                    prop_title=prop_title,
-                    category_id=category_id,
-                    prop_type=prop_type,
-                    listing_type=listing_type,
-                    prop_desc=prop_desc,
-                    prop_price=prop_price,
-                    prop_location=prop_location,
-                    prop_state=prop_state,
-                    prop_address=prop_address,
-                    prop_userid=user_id,
-                )
+                property_payload = {
+                    'prop_title': prop_title,
+                    'category_id': category_id,
+                    'prop_type': prop_type,
+                    'listing_type': listing_type,
+                    'prop_desc': prop_desc,
+                    'prop_price': prop_price,
+                    'prop_location': prop_location,
+                    'prop_state': prop_state,
+                    'prop_address': prop_address,
+                    'prop_userid': user_id,
+                }
+                if hasattr(Property, 'prop_lga'):
+                    property_payload['prop_lga'] = prop_lga
+
+                property_obj = Property(**property_payload)
                 db.session.add(property_obj)
                 db.session.commit()
                 saved_property_id = property_obj.prop_id
-        except Exception:
+        except Exception as e:
+            app.logger.exception('Property save failed for user %s and property %s', user_id, property_id)
+
             db.session.rollback()
-            flash('Failed to save property', 'danger')
-            return redirect(url_for('post_property', property_id=property_id) if property_id else url_for('post_property'))
+
+            flash(f"Failed to save property: {e}", "danger")
+            return redirect(
+                url_for('post_property', property_id=property_id)
+                if property_id else
+                url_for('post_property')
+            )
 
         images = request.files.getlist('images')
+
         current_count = len(existing_images) if property_data else 0
         ok, error_message = save_property_images(saved_property_id, images, existing_count=current_count)
         if not ok:

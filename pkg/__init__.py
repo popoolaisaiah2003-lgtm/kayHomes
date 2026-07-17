@@ -15,10 +15,7 @@ app.config['SECRET_KEY'] = os.environ.get(
     "securedkey"
 )
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    "DATABASE_URL",
-    "mysql+pymysql://root:@localhost/kayhomes"
-)
+app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://root:KeaDarIgcNtOVoOWFFYuChqSrmGSYkyx@tokaido.proxy.rlwy.net:57048/railway"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 app.config.setdefault('MAIL_SERVER', '127.0.0.1')

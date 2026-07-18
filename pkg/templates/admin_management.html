@@ -42,8 +42,8 @@
 
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
+      <div class="table-responsive admin-table-wrap">
+        <table class="table table-ui table-sticky table-striped table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th>Profile Photo</th>
@@ -87,7 +87,7 @@
                       -
                     {% endif %}
                   </td>
-                  <td class="text-end">
+                  <td class="text-end table-actions">
                     <div class="d-flex justify-content-end gap-2 flex-wrap">
                       <a href="{{ url_for('admin_view_admin', admin_id=admin.admin_id) }}" class="btn btn-outline-primary btn-sm">View</a>
                       <a href="{{ url_for('admin_edit_admin', admin_id=admin.admin_id) }}" class="btn btn-outline-secondary btn-sm">Edit</a>

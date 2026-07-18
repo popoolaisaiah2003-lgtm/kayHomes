@@ -27,7 +27,7 @@
 
   {% set no_back_button_endpoints = ['home', 'login', 'register', 'admin_login', 'admin_register'] %}
   {% if request.endpoint not in no_back_button_endpoints %}
-    <div class="container pt-3 pb-0">
+    <div class="kh-content-container pt-3 pb-0">
       <button
         type="button"
         class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
@@ -40,7 +40,7 @@
     </div>
   {% endif %}
 
-  <div class="container py-4">
+  <div class="kh-content-container py-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
@@ -78,7 +78,7 @@
 
   {% set is_logged_in = session.get('user_id') %}
   <div class="site-cta py-4">
-    <div class="container d-flex flex-column flex-md-row {% if not is_logged_in %}justify-content-between{% else %}justify-content-center{% endif %} align-items-center gap-3">
+    <div class="kh-content-container d-flex flex-column flex-md-row {% if not is_logged_in %}justify-content-between{% else %}justify-content-center{% endif %} align-items-center gap-3">
       <h5 class="mb-0 fw-semibold text-center text-md-start cta-heading">Looking for trusted property options or a reliable listing agent?</h5>
       {% if not is_logged_in %}
         <a href="{{ url_for('register') }}" class="btn btn-light px-4 py-2 fw-bold">Create User</a>
@@ -87,7 +87,7 @@
   </div>
 
   <footer class="site-footer py-5">
-    <div class="container">
+    <div class="kh-content-container">
       <div class="row g-4">
           <div class="col-12 col-lg-4">
             <a class="d-inline-block mb-3" href="{{ url_for('home') }}">

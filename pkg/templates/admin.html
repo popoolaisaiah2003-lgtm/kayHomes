@@ -106,8 +106,8 @@
 
   <div class="card border-0">
     <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
+      <div class="table-responsive admin-table-wrap">
+        <table class="table table-ui table-sticky table-striped table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th>ID</th>
@@ -137,7 +137,7 @@
                       -
                     {% endif %}
                   </td>
-                  <td class="text-end">
+                  <td class="text-end table-actions">
                     <a href="{{ url_for('admin_edit_property', property_id=property.prop_id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
                     <form method="POST" action="{{ url_for('admin_delete_property', property_id=property.prop_id) }}" class="d-inline" onsubmit="return confirm('Delete this property? This action cannot be undone.');">
                       <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">

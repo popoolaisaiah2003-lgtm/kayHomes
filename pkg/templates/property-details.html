@@ -5,8 +5,8 @@
 {% block main_content %}
 <div class="details-page fade-up" data-property-detail data-poll-url="{{ url_for('property_detail_api', property_id=property['prop_id']) }}" data-placeholder-image="{{ url_for('static', filename='images/img1.jpg') }}">
     <div class="container my-5">
-        <div class="row">
-            <div class="col-md-8">
+    <div class="row g-4">
+      <div class="col-lg-8">
                 {% if cover_image %}
                 <img id="mainPropertyImage" src="{{ url_for('static', filename='uploads/' ~ cover_image) }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
                 {% else %}
@@ -27,34 +27,33 @@
                   </div>
             </div>
 
-            <div class="col-md-4">
-              <div class="card border-0 p-4 h-100">
-              <h1 id="propertyDetailTitle" class="property-name-title">{{ property['prop_title'] }}</h1>
-              <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price'] }}</h2>
-                <p id="propertyDetailLocation" class="property-location-text">{{ property['prop_location'] }}, {{ property['prop_state'] }}</p>
+            <div class="col-lg-4">
+              <aside class="property-sidebar">
+                <div class="property-info-card mb-3">
+                  <h1 id="propertyDetailTitle" class="property-name-title">{{ property['prop_title'] }}</h1>
+                  <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price'] }}</h2>
+                  <p id="propertyDetailLocation" class="property-meta-item mb-3">
+                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                    <span>{{ property['prop_location'] }}, {{ property['prop_state'] }}</span>
+                  </p>
 
-                <hr class="section-divider">
+                  <div class="detail-section-card mb-3">
+                    <h6>Description</h6>
+                    <p id="propertyDetailDescription" class="mb-0 description-text">{{ property['prop_desc'] }}</p>
+                  </div>
 
-                <div class="description-section mb-4">
-                    <h4 class="sub-heading">Description</h4>
-                  <p id="propertyDetailDescription" class="description-text">{{ property['prop_desc'] }}</p>
-                </div>
+                  <div class="detail-section-card mb-3">
+                    <h6>Address</h6>
+                    <p id="propertyDetailAddress" class="mb-0">{{ property['prop_address'] }}</p>
+                  </div>
 
-                <hr class="section-divider">
-
-                <div class="features-section mb-4">
-                    <h4 class="sub-heading">Address</h4>
-                  <p id="propertyDetailAddress">{{ property['prop_address'] }}</p>
-                </div>
-
-              <div class="details-action-buttons">
+                  <div class="details-action-buttons d-grid gap-2">
                     {% if can_message %}
-                      <a href="{{ url_for('start_chat', property_id=property['prop_id']) }}"
-                        class="btn btn-primary w-100 mb-2">
-                        Message Owner
+                      <a href="{{ url_for('start_chat', property_id=property['prop_id']) }}" class="btn btn-primary">
+                        <i class="bi bi-chat-left-text me-2" aria-hidden="true"></i>Message Owner
                       </a>
                     {% else %}
-                      <div class="alert alert-info">
+                      <div class="alert alert-info mb-0">
                         This is your property listing
                       </div>
                     {% endif %}
@@ -63,23 +62,23 @@
                       <button
                         id="favoriteToggle"
                         type="button"
-                        class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %} w-100 mb-3"
+                        class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %}"
                         data-property-id="{{ property['prop_id'] }}"
                         data-favorite-toggle-url="{{ url_for('favorite_toggle', property_id=property['prop_id']) }}"
                       >
                         {% if is_favorite %}❤️ Saved{% else %}🤍 Save{% endif %}
                       </button>
                     {% endif %}
-
-                    <div class="card mt-3 p-3">
-                      <h5>Owner Information</h5>
-                      <p class="mb-1"><strong>Name:</strong> {{ owner.user_fname }} {{ owner.user_lname }}</p>
-                      <p class="mb-1"><strong>Phone:</strong> {{ owner.user_phone }}</p>
-                      <p class="mb-0"><strong>Email:</strong> {{ owner.user_email }}</p>
-                    </div>
-              </div>
+                  </div>
                 </div>
-                
+
+                <div class="owner-card">
+                  <h5 class="mb-3">Owner Information</h5>
+                  <p class="mb-2"><strong>Name:</strong> {{ owner.user_fname }} {{ owner.user_lname }}</p>
+                  <p class="mb-2"><strong>Phone:</strong> {{ owner.user_phone }}</p>
+                  <p class="mb-0"><strong>Email:</strong> {{ owner.user_email }}</p>
+                </div>
+              </aside>
             </div>
         </div>
         

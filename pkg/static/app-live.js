@@ -1,7 +1,7 @@
 (function () {
   var pollers = [];
   var buttonState = new WeakMap();
-  var defaultLoadingHtml = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading...';
+  var defaultLoadingHtml = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Processing...';
 
   function fetchJson(url, options) {
     var requestOptions = options || {};
@@ -712,8 +712,50 @@
     registerPoller({ interval: 10000, onTick: pollAdminStats, immediate: false });
   }
 
+  function initializePasswordToggles() {
+    var passwordInputs = document.querySelectorAll('input[type="password"]:not([data-password-toggle-bound="true"])');
+    if (!passwordInputs.length) {
+      return;
+    }
+
+    passwordInputs.forEach(function (input) {
+      if (!input.parentNode) {
+        return;
+      }
+
+      input.dataset.passwordToggleBound = 'true';
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'password-toggle-wrap';
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+
+      var toggleButton = document.createElement('button');
+      toggleButton.type = 'button';
+      toggleButton.className = 'password-toggle-btn';
+      toggleButton.setAttribute('aria-label', 'Show password');
+      toggleButton.setAttribute('aria-pressed', 'false');
+      toggleButton.innerHTML = '<i class="bi bi-eye" aria-hidden="true"></i>';
+
+      toggleButton.addEventListener('click', function () {
+        var showPassword = input.type === 'password';
+        input.type = showPassword ? 'text' : 'password';
+        toggleButton.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+        toggleButton.setAttribute('aria-pressed', showPassword ? 'true' : 'false');
+
+        var icon = toggleButton.querySelector('i');
+        if (icon) {
+          icon.className = showPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+        }
+      });
+
+      wrapper.appendChild(toggleButton);
+    });
+  }
+
   function initialize() {
     bindFormLoadingStates(document);
+    initializePasswordToggles();
     initializeUnreadBadge();
     initializeChatPage();
     initializePropertiesPage();

@@ -799,6 +799,263 @@ textarea.form-control,
   color: var(--kh-text-muted) !important;
 }
 
+/* UI/UX refinement overrides */
+.kh-content-container {
+  width: min(1180px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.dashboard-page .container-fluid {
+  width: min(1240px, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1180px;
+  }
+}
+
+.navbar .container-fluid,
+.navbar .container {
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+.navbar-nav {
+  gap: 0.35rem;
+}
+
+.navbar-collapse {
+  padding-block: 0.35rem;
+}
+
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    padding: 0.95rem 0;
+  }
+
+  .navbar-nav .nav-item {
+    width: 100%;
+  }
+
+  .navbar-nav .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.btn {
+  min-height: 42px;
+  padding: 0.58rem 1.05rem;
+  border-radius: 12px;
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0.42rem 0.85rem;
+}
+
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.65;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+form:not(.d-inline):not(.d-flex) .form-label,
+form:not(.d-inline):not(.d-flex) small {
+  margin-bottom: 0.4rem;
+}
+
+.form-control,
+.form-select,
+textarea.form-control {
+  min-height: 50px;
+}
+
+textarea.form-control {
+  min-height: 130px;
+}
+
+.login-form,
+.register-form {
+  max-width: 560px;
+  margin-inline: auto;
+}
+
+.login-page-container .row,
+.register-page-container .row {
+  align-items: center;
+}
+
+.password-toggle-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-wrap .form-control {
+  padding-right: 2.85rem;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--kh-text-muted);
+  transition: color var(--kh-transition), background-color var(--kh-transition);
+}
+
+.password-toggle-btn:hover {
+  color: var(--kh-primary);
+  background-color: color-mix(in srgb, var(--kh-surface-alt) 76%, transparent);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--kh-secondary) 75%, white);
+  outline-offset: 2px;
+}
+
+.card {
+  border-radius: 16px;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+}
+
+.card:hover {
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.13);
+}
+
+.property-card,
+.metric-card {
+  transition: transform var(--kh-transition), box-shadow var(--kh-transition);
+}
+
+.property-card:hover,
+.metric-card:hover {
+  transform: translateY(-4px);
+}
+
+.admin-table-wrap {
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.table-ui {
+  margin-bottom: 0;
+}
+
+.table-ui > :not(caption) > * > * {
+  padding: 0.82rem 0.9rem;
+  vertical-align: middle;
+}
+
+.table-ui.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: color-mix(in srgb, var(--kh-surface) 84%, var(--kh-surface-alt));
+}
+
+.table-ui.table-hover > tbody > tr:hover > * {
+  background-color: color-mix(in srgb, var(--kh-surface-alt) 78%, var(--kh-secondary) 22%);
+}
+
+.table-sticky thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--kh-surface-alt) 95%, white 5%);
+}
+
+.table-actions {
+  white-space: nowrap;
+}
+
+.table-actions .btn,
+.table-actions form {
+  margin-bottom: 0.2rem;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.42rem 0.66rem;
+  font-weight: 600;
+}
+
+.details-page .container {
+  max-width: 1240px;
+}
+
+.property-sidebar {
+  position: relative;
+}
+
+@media (min-width: 992px) {
+  .property-sidebar {
+    position: sticky;
+    top: 92px;
+  }
+}
+
+.property-info-card {
+  border: 1px solid var(--kh-border);
+  border-radius: 18px;
+  background: var(--kh-surface);
+  box-shadow: var(--kh-shadow-md);
+  padding: 1.25rem;
+}
+
+.property-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--kh-text-muted);
+  font-size: 0.96rem;
+}
+
+.detail-section-card {
+  border: 1px solid var(--kh-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--kh-surface) 92%, var(--kh-surface-alt));
+  padding: 0.9rem 1rem;
+}
+
+.detail-section-card h6 {
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.45rem;
+  color: var(--kh-text-muted);
+}
+
+.details-action-buttons .btn {
+  width: 100%;
+}
+
+.owner-card {
+  border: 1px solid var(--kh-border);
+  border-radius: 14px;
+  background: var(--kh-surface);
+  padding: 1rem;
+}
+
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--kh-secondary) 70%, white);
+  outline-offset: 2px;
+}
+
 /* Utility */
 .fade-up {
   animation: fadeUp 0.65s ease both;

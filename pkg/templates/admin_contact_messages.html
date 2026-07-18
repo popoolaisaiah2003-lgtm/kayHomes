@@ -57,8 +57,8 @@
 
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
+      <div class="table-responsive admin-table-wrap">
+        <table class="table table-ui table-sticky table-striped table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th>ID</th>
@@ -75,18 +75,13 @@
             {% if messages %}
               {% for message in messages %}
                 <tr>
-                    {{ message.phone or '-' }}
+                  <td>{{ message.message_id }}</td>
                   <td>
                     <div class="fw-semibold">{{ message.name }}</div>
-                    {{ message.subject or 'No subject' }}
-                  </td>
-                  <td>
                     <div class="text-muted small">{{ message.email }}</div>
                   </td>
-                  <td>
-                    {{ message.subject or 'No subject' }}
-                  </td>
                   <td>{{ message.phone or '-' }}</td>
+                  <td>{{ message.subject or 'No subject' }}</td>
                   <td>
                     <div class="text-muted small text-truncate" style="max-width: 280px;">
                       {{ message.message }}
@@ -110,7 +105,7 @@
                     {% endif %}
                     <span class="badge {{ status_class }}">{{ message.status or 'Unread' }}</span>
                   </td>
-                  <td class="text-end">
+                  <td class="text-end table-actions">
                     <div class="d-flex justify-content-end gap-2 flex-wrap">
                       <a href="{{ url_for('admin_view_contact_message', message_id=message.message_id) }}" class="btn btn-outline-primary btn-sm">View</a>
                       <form method="POST" action="{{ url_for('admin_mark_contact_message_replied', message_id=message.message_id) }}" class="d-inline">

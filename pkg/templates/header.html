@@ -53,11 +53,9 @@
                   <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" href="{{ url_for('messages') }}">
+                  <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
                     <i class="bi bi-chat-left-text me-1"></i> Messages
-                    {% if unread_count and unread_count > 0 %}
-                      <span class="badge bg-danger ms-1">{{ unread_count }}</span>
-                    {% endif %}
+                    <span id="navMessagesBadge" class="badge bg-danger ms-1 {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
                   </a>
                 </li>
                 <li class="nav-item dropdown ms-lg-3">

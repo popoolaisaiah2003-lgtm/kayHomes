@@ -78,11 +78,11 @@
           {% endif %}
         </div>
 
-        <div id="propertyResults" class="row g-4 property-results fade-up">
+        <div id="propertyResults" class="row g-4 property-results fade-up" data-properties-feed data-poll-url="{{ url_for('properties_updates_api') }}" data-before-id="{{ properties[0]['prop_id'] if properties else 0 }}" data-category-id="{{ selected_category_id if selected_category_id is not none else '' }}" data-search-query="{{ search_query }}">
           {% if properties %}
             {% for prop in properties %}
-              <div class="col-sm-12 col-md-6 col-lg-4">
-                <div class="card h-100 border-0 property-card property-card-clickable" role="button" data-detail-url="{{ url_for('property_detail', property_id=prop['prop_id']) }}">
+              <div class="col-sm-12 col-md-6 col-lg-4" data-property-id="{{ prop['prop_id'] }}">
+                <div class="card h-100 border-0 property-card property-card-clickable" role="button" data-property-id="{{ prop['prop_id'] }}" data-detail-url="{{ url_for('property_detail', property_id=prop['prop_id']) }}">
                   {% if prop.get('cover_image') %}
                     <img src="{{ url_for('static', filename='uploads/' ~ prop['cover_image']) }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
                   {% else %}

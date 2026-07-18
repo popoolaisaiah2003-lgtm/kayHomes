@@ -1,0 +1,54 @@
+﻿{
+  "profile_page": {
+    "status": 200,
+    "has_poll_hook": true
+  },
+  "properties_page": {
+    "status": 200,
+    "has_poll_hook": true
+  },
+  "my_listings_page": {
+    "status": 200,
+    "has_poll_hook": true
+  },
+  "property_detail_page": {
+    "status": 200,
+    "has_poll_hook": true
+  },
+  "chat_page": {
+    "status": 200,
+    "has_poll_hook": true
+  },
+  "api": {
+    "unread_count": {
+      "unread_count": 0
+    },
+    "profile_stats": {
+      "active_listings": 1,
+      "favorites_count": 0,
+      "total_properties": 1,
+      "unread_messages": 0,
+      "views_count": null
+    },
+    "my_listings_count": 1,
+    "properties_updates_count": 5,
+    "detail_has_images_key": true,
+    "chat_initial_count": 1,
+    "chat_send_success": true,
+    "viewer_received_reply_count": 2,
+    "admin_stats_keys": [
+      "active_listings",
+      "administrators_count",
+      "contact_messages_count",
+      "favorites_count",
+      "pending_approvals",
+      "total_properties",
+      "unread_messages_count",
+      "users_count"
+    ]
+  },
+  "admin_page": {
+    "status": 200,
+    "has_poll_hook": true
+  }
+}

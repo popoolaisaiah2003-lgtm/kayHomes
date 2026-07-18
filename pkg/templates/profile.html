@@ -3,14 +3,14 @@
 {% block title %}Profile - KayHomes{% endblock %}
 
 {% block main_content %}
-<div class="container py-5">
+<div class="container py-5" data-profile-stats-url="{{ url_for('profile_stats_api') }}">
   <div class="row g-3 mb-4 fade-up">
     <div class="col-6 col-lg-3">
       <div class="metric-card metric-primary">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Total Properties</div>
-            <h4 class="mb-0">{{ total_properties|default(0) }}</h4>
+            <h4 id="profileTotalProperties" class="mb-0">{{ total_properties|default(0) }}</h4>
           </div>
           <i class="bi bi-house-door-fill"></i>
         </div>
@@ -21,7 +21,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Active Listings</div>
-            <h4 class="mb-0">{{ active_listings|default(total_properties|default(0)) }}</h4>
+            <h4 id="profileActiveListings" class="mb-0">{{ active_listings|default(total_properties|default(0)) }}</h4>
           </div>
           <i class="bi bi-check-circle-fill"></i>
         </div>
@@ -32,7 +32,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Favorites</div>
-            <h4 class="mb-0">{{ favorites_count|default(0) }}</h4>
+            <h4 id="profileFavoritesCount" class="mb-0">{{ favorites_count|default(0) }}</h4>
           </div>
           <i class="bi bi-heart-fill"></i>
         </div>
@@ -43,12 +43,25 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Messages</div>
-            <h4 class="mb-0">{{ unread_messages|default(0) }}</h4>
+            <h4 id="profileUnreadMessages" class="mb-0">{{ unread_messages|default(0) }}</h4>
           </div>
           <i class="bi bi-chat-left-text-fill"></i>
         </div>
       </div>
     </div>
+    {% if views_count is not none %}
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Views</div>
+            <h4 id="profileViewsCount" class="mb-0">{{ views_count|default(0) }}</h4>
+          </div>
+          <i class="bi bi-eye-fill"></i>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="row g-4">

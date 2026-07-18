@@ -3,7 +3,7 @@ from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from pkg import app, ensure_category_schema_compatibility, mail
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
-from pkg.models import Category, ContactMessage, PasswordResetToken, db, User, Property
+from pkg.models import Category, ContactMessage, Favorite, PasswordResetToken, db, User, Property
 import os, secrets
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func
@@ -340,6 +340,265 @@ def delete_image_file(image_path):
         pass
 
 
+def _format_message_timestamp(value):
+    if hasattr(value, 'strftime'):
+        return value.strftime('%b %d, %Y %I:%M %p')
+    return str(value or '')
+
+
+def _serialize_message_row(row, current_user_id):
+    return {
+        'msg_id': row['msg_id'],
+        'sender_id': row['sender_id'],
+        'receiver_id': row['receiver_id'],
+        'message': row['message'],
+        'created_at': _format_message_timestamp(row.get('created_at')),
+        'is_sender': row['sender_id'] == current_user_id,
+    }
+
+
+def _get_unread_message_count(user_id):
+    try:
+        return db.session.execute(
+            text('SELECT COUNT(*) FROM messages WHERE receiver_id = :uid AND is_read = 0'),
+            {'uid': user_id}
+        ).scalar() or 0
+    except Exception:
+        return 0
+
+
+def _property_status_column():
+    property_columns = get_table_columns('property')
+    for candidate in ('status', 'prop_status', 'listing_status'):
+        if candidate in property_columns:
+            return candidate
+    return None
+
+
+def _format_plain_price(value):
+    if value is None:
+        return ''
+    return str(value)
+
+
+def _format_currency_price(value):
+    try:
+        return f"₦{float(value):,.0f}"
+    except (TypeError, ValueError):
+        return str(value or '')
+
+
+def _placeholder_property_image_url():
+    return url_for('static', filename='images/img1.jpg')
+
+
+def _upload_image_url(image_name):
+    if not image_name:
+        return _placeholder_property_image_url()
+    return url_for('static', filename=f'uploads/{image_name}')
+
+
+def _serialize_property_model(property_obj):
+    image_rows = get_property_images(property_obj.prop_id)
+    cover_image = image_rows[0]['image_path'] if image_rows else None
+    return {
+        'prop_id': property_obj.prop_id,
+        'prop_title': property_obj.prop_title,
+        'prop_type': property_obj.category.cat_name if getattr(property_obj, 'category', None) else property_obj.prop_type,
+        'listing_type': property_obj.listing_type,
+        'prop_desc': property_obj.prop_desc,
+        'prop_price': _format_plain_price(property_obj.prop_price),
+        'prop_location': property_obj.prop_location,
+        'prop_state': property_obj.prop_state,
+        'prop_address': property_obj.prop_address,
+        'short_desc': (property_obj.prop_desc or '')[:160],
+        'cover_image': cover_image,
+        'cover_image_url': _upload_image_url(cover_image),
+        'detail_url': url_for('property_detail', property_id=property_obj.prop_id),
+    }
+
+
+def _get_inquiry_count_map(property_ids):
+    if not property_ids:
+        return {}
+
+    try:
+        rows = db.session.execute(
+            text(
+                'SELECT inqu_propid, COUNT(*) AS total '
+                'FROM inquiries '
+                'WHERE inqu_propid IN :prop_ids '
+                'GROUP BY inqu_propid'
+            ).bindparams(prop_ids=tuple(property_ids), expanding=True)
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    return {row['inqu_propid']: int(row['total'] or 0) for row in rows if row.get('inqu_propid')}
+
+
+def _serialize_listing_row(row, inquiry_count=0):
+    listing_id = row['prop_id']
+    image_rows = get_property_images(listing_id)
+    cover_image = image_rows[0]['image_path'] if image_rows else None
+    created_at = row.get('prop_regdate')
+    return {
+        'prop_id': listing_id,
+        'prop_title': row['prop_title'],
+        'prop_price': row['prop_price'],
+        'prop_price_display': _format_currency_price(row['prop_price']),
+        'prop_location': row['prop_location'],
+        'prop_type': row['prop_type'],
+        'listing_type': row['listing_type'],
+        'prop_userid': row['prop_userid'],
+        'prop_desc': row['prop_desc'],
+        'prop_state': row['prop_state'],
+        'prop_address': row['prop_address'],
+        'image': cover_image,
+        'image_url': _upload_image_url(cover_image),
+        'created_at': created_at.strftime('%b %d, %Y') if hasattr(created_at, 'strftime') else 'Recently posted',
+        'inquiry_count': inquiry_count,
+        'view_url': url_for('property_detail', property_id=listing_id),
+        'edit_url': url_for('edit_listing', property_id=listing_id),
+        'delete_url': url_for('delete_listing', property_id=listing_id),
+    }
+
+
+def _build_my_listings_payload(user_id):
+    try:
+        rows = db.session.execute(
+            text(
+                '''
+                SELECT p.*
+                FROM property p
+                WHERE p.prop_userid = :uid
+                ORDER BY p.prop_id DESC
+                '''
+            ),
+            {'uid': user_id}
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    inquiry_map = _get_inquiry_count_map([row['prop_id'] for row in rows])
+    return [
+        _serialize_listing_row(row, inquiry_count=inquiry_map.get(row['prop_id'], 0))
+        for row in rows
+    ]
+
+
+def _get_profile_stats(user_id):
+    total_properties = Property.query.filter_by(prop_userid=user_id).count() or 0
+
+    status_column = _property_status_column()
+    if status_column and hasattr(Property, status_column):
+        active_listings = (
+            Property.query
+            .filter(Property.prop_userid == user_id, getattr(Property, status_column) == 'Active')
+            .count()
+            or 0
+        )
+    else:
+        active_listings = total_properties
+
+    try:
+        favorites_count = Favorite.query.filter_by(fav_userid=user_id).count() or 0
+    except Exception:
+        favorites_count = 0
+
+    property_columns = get_table_columns('property')
+    views_count = None
+    for candidate in ('view_count', 'views', 'prop_views'):
+        if candidate in property_columns:
+            try:
+                views_count = db.session.execute(
+                    text(f'SELECT COALESCE(SUM({candidate}), 0) FROM property WHERE prop_userid = :uid'),
+                    {'uid': user_id}
+                ).scalar() or 0
+            except Exception:
+                views_count = 0
+            break
+
+    return {
+        'total_properties': total_properties,
+        'active_listings': active_listings,
+        'favorites_count': favorites_count,
+        'unread_messages': _get_unread_message_count(user_id),
+        'views_count': views_count,
+    }
+
+
+def _build_property_detail_payload(property_id, current_user_id):
+    try:
+        result = db.session.execute(
+            text(
+                '''
+                SELECT p.*, u.user_id AS owner_id, u.user_fname, u.user_lname, u.user_email, u.user_phone
+                FROM property p
+                JOIN users u ON p.prop_userid = u.user_id
+                WHERE p.prop_id = :pid
+                '''
+            ),
+            {'pid': property_id}
+        ).mappings().first()
+    except Exception:
+        result = None
+
+    if not result:
+        return None
+
+    property_data = dict(result)
+    image_rows = get_property_images(property_id)
+    image_paths = [row['image_path'] for row in image_rows if row.get('image_path')]
+    cover_image = image_paths[0] if image_paths else None
+    gallery_images = image_paths[1:] if len(image_paths) > 1 else []
+
+    is_favorite = False
+    if current_user_id:
+        try:
+            favorite_check = db.session.execute(
+                text('SELECT 1 FROM favorites WHERE fav_userid = :uid AND fav_propid = :pid LIMIT 1'),
+                {'uid': current_user_id, 'pid': property_id}
+            ).scalar()
+            is_favorite = bool(favorite_check)
+        except Exception:
+            is_favorite = False
+
+    return {
+        'prop_id': property_data['prop_id'],
+        'prop_title': property_data['prop_title'],
+        'prop_price': _format_plain_price(property_data.get('prop_price')),
+        'prop_location': property_data.get('prop_location') or '',
+        'prop_state': property_data.get('prop_state') or '',
+        'prop_desc': property_data.get('prop_desc') or '',
+        'prop_address': property_data.get('prop_address') or '',
+        'cover_image': cover_image,
+        'cover_image_url': _upload_image_url(cover_image),
+        'gallery_images': [
+            {
+                'image_path': image_name,
+                'image_url': _upload_image_url(image_name),
+            }
+            for image_name in gallery_images
+        ],
+        'images': [
+            {
+                'image_path': image_name,
+                'image_url': _upload_image_url(image_name),
+            }
+            for image_name in image_paths
+        ],
+        'owner': {
+            'user_id': property_data['owner_id'],
+            'user_fname': property_data['user_fname'],
+            'user_lname': property_data['user_lname'],
+            'user_email': property_data['user_email'],
+            'user_phone': property_data['user_phone'],
+        },
+        'is_favorite': is_favorite,
+    }
+
+
 def login_required(view_func):
     @wraps(view_func)
     def wrapped_view(*args, **kwargs):
@@ -355,13 +614,7 @@ def login_required(view_func):
 def inject_unread_count():
     unread_count = 0
     if session.get('user_id'):
-        try:
-            unread_count = db.session.execute(
-                text('SELECT COUNT(*) FROM messages WHERE receiver_id = :uid AND is_read = 0'),
-                {'uid': session['user_id']}
-            ).scalar() or 0
-        except Exception:
-            unread_count = 0
+        unread_count = _get_unread_message_count(session['user_id'])
     return {
         'unread_count': unread_count,
         'current_theme': get_current_theme(),
@@ -1031,13 +1284,218 @@ def chat(property_id, user_id):
     except Exception:
         messages = []
 
+    last_message_id = messages[-1]['msg_id'] if messages else 0
+
     return render_template(
         'chat.html',
         property=property_row,
         other_user=other_user,
         messages=messages,
-        current_user=current_user
+        current_user=current_user,
+        last_message_id=last_message_id,
     )
+
+
+@app.route('/api/messages/unread-count')
+@login_required
+def unread_message_count_api():
+    user_id = session['user_id']
+    return jsonify({'unread_count': _get_unread_message_count(user_id)})
+
+
+@app.route('/api/chat/<int:property_id>/<int:user_id>/messages')
+@login_required
+def chat_messages_api(property_id, user_id):
+    current_user = session['user_id']
+    after_id = request.args.get('after_id', 0, type=int) or 0
+
+    if current_user == user_id:
+        return jsonify({'error': 'Cannot chat with yourself'}), 400
+
+    try:
+        property_row = db.session.execute(
+            text('SELECT prop_id FROM property WHERE prop_id = :pid'),
+            {'pid': property_id}
+        ).mappings().first()
+        other_user = db.session.execute(
+            text('SELECT user_id FROM users WHERE user_id = :uid'),
+            {'uid': user_id}
+        ).mappings().first()
+    except Exception:
+        property_row = None
+        other_user = None
+
+    if not property_row or not other_user:
+        abort(404)
+
+    try:
+        rows = db.session.execute(
+            text(
+                '''
+                SELECT m.msg_id, m.sender_id, m.receiver_id, m.message, m.created_at
+                FROM messages m
+                WHERE m.property_id = :pid
+                  AND m.msg_id > :after_id
+                  AND ((m.sender_id = :uid AND m.receiver_id = :oid) OR (m.sender_id = :oid AND m.receiver_id = :uid))
+                ORDER BY m.msg_id ASC
+                '''
+            ),
+            {'pid': property_id, 'after_id': after_id, 'uid': current_user, 'oid': user_id}
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    try:
+        db.session.execute(
+            text(
+                '''
+                UPDATE messages
+                SET is_read = 1
+                WHERE receiver_id = :uid
+                  AND property_id = :pid
+                  AND sender_id = :oid
+                '''
+            ),
+            {'uid': current_user, 'pid': property_id, 'oid': user_id}
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    payload = [_serialize_message_row(row, current_user) for row in rows]
+    last_message_id = payload[-1]['msg_id'] if payload else after_id
+    return jsonify({'messages': payload, 'last_message_id': last_message_id})
+
+
+@app.route('/api/chat/<int:property_id>/<int:user_id>/send', methods=['POST'])
+@login_required
+def chat_send_api(property_id, user_id):
+    current_user = session['user_id']
+    message_text = (request.form.get('message') or '').strip()
+
+    if current_user == user_id:
+        return jsonify({'error': 'Cannot chat with yourself'}), 400
+
+    if not message_text:
+        return jsonify({'error': 'Message is required.'}), 400
+
+    try:
+        property_row = db.session.execute(
+            text('SELECT prop_id FROM property WHERE prop_id = :pid'),
+            {'pid': property_id}
+        ).mappings().first()
+        other_user = db.session.execute(
+            text('SELECT user_id FROM users WHERE user_id = :uid'),
+            {'uid': user_id}
+        ).mappings().first()
+    except Exception:
+        property_row = None
+        other_user = None
+
+    if not property_row or not other_user:
+        abort(404)
+
+    try:
+        db.session.execute(
+            text(
+                '''
+                INSERT INTO messages (property_id, sender_id, receiver_id, message, is_read, created_at)
+                VALUES (:pid, :sender, :receiver, :message, 0, NOW())
+                '''
+            ),
+            {'pid': property_id, 'sender': current_user, 'receiver': user_id, 'message': message_text}
+        )
+        db.session.commit()
+        row = db.session.execute(
+            text(
+                '''
+                SELECT msg_id, sender_id, receiver_id, message, created_at
+                FROM messages
+                WHERE property_id = :pid AND sender_id = :sender AND receiver_id = :receiver
+                ORDER BY msg_id DESC
+                LIMIT 1
+                '''
+            ),
+            {'pid': property_id, 'sender': current_user, 'receiver': user_id}
+        ).mappings().first()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.exception('Chat send failed for property %s between %s and %s', property_id, current_user, user_id)
+        return jsonify({'error': str(exc)}), 500
+
+    return jsonify({'success': True, 'message': _serialize_message_row(row, current_user)})
+
+
+@app.route('/api/properties/updates')
+@login_required
+def properties_updates_api():
+    ensure_property_image_table()
+    ensure_category_schema_compatibility()
+
+    selected_category_id = request.args.get('category_id', type=int)
+    search_query = (request.args.get('q') or '').strip()
+    before_id = request.args.get('before_id', 0, type=int) or 0
+
+    try:
+        query = Property.query.options(joinedload(Property.category)).filter(Property.prop_id > before_id)
+
+        if selected_category_id:
+            query = query.filter(Property.category_id == selected_category_id)
+
+        if search_query:
+            like_pattern = f"%{search_query}%"
+            query = query.outerjoin(Category, Property.category_id == Category.cat_id)
+            query = query.filter(
+                or_(
+                    Property.prop_title.ilike(like_pattern),
+                    Property.prop_location.ilike(like_pattern),
+                    Property.prop_state.ilike(like_pattern),
+                    Property.prop_desc.ilike(like_pattern),
+                    Property.prop_address.ilike(like_pattern),
+                    Property.prop_type.ilike(like_pattern),
+                    Category.cat_name.ilike(like_pattern),
+                )
+            )
+
+        rows = query.order_by(Property.prop_id.desc()).all()
+    except Exception:
+        rows = []
+
+    properties = [_serialize_property_model(row) for row in rows]
+    latest_property_id = before_id
+    if properties:
+        latest_property_id = max(item['prop_id'] for item in properties)
+
+    return jsonify({'properties': properties, 'latest_property_id': latest_property_id})
+
+
+@app.route('/api/my-listings/updates')
+@login_required
+def my_listings_updates_api():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Authentication required.'}), 401
+
+    listings = _build_my_listings_payload(user.user_id)
+    return jsonify({'listings': listings})
+
+
+@app.route('/api/property/<int:property_id>/details')
+@login_required
+def property_detail_api(property_id):
+    payload = _build_property_detail_payload(property_id, session.get('user_id'))
+    if not payload:
+        abort(404)
+    return jsonify(payload)
+
+
+@app.route('/api/profile/stats')
+@login_required
+def profile_stats_api():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Authentication required.'}), 401
+    return jsonify(_get_profile_stats(user.user_id))
 
 
 @app.route('/messages')
@@ -1284,7 +1742,18 @@ def profile():
         flash('Profile updated successfully.', 'success')
         return redirect(url_for('profile'))
 
-    return render_template('profile.html', title='Profile', user=user)
+    stats = _get_profile_stats(user.user_id)
+
+    return render_template(
+        'profile.html',
+        title='Profile',
+        user=user,
+        total_properties=stats['total_properties'],
+        active_listings=stats['active_listings'],
+        favorites_count=stats['favorites_count'],
+        unread_messages=stats['unread_messages'],
+        views_count=stats['views_count'],
+    )
 
 
 @app.route('/my-listings/')
@@ -1295,52 +1764,7 @@ def my_listings():
     if not user:
         return redirect(url_for('login'))
 
-    try:
-        rows = db.session.execute(
-            text('''
-                SELECT p.*
-                FROM property p
-                WHERE p.prop_userid = :uid
-                ORDER BY p.prop_id DESC
-            '''),
-            {'uid': user.user_id}
-        ).mappings().all()
-    except Exception:
-        rows = []
-
-    listings = []
-    for row in rows:
-        listings.append({
-            'prop_id': row['prop_id'],
-            'prop_title': row['prop_title'],
-            'prop_price': row['prop_price'],
-            'prop_location': row['prop_location'],
-            'prop_type': row['prop_type'],
-            'listing_type': row['listing_type'],
-            'prop_userid': row['prop_userid'],
-            'prop_desc': row['prop_desc'],
-            'prop_state': row['prop_state'],
-            'prop_address': row['prop_address'],
-            'image': None,
-            'created_at': row.get('prop_regdate')
-        })
-
-    for listing in listings:
-        listing_images = get_property_images(listing['prop_id'])
-        listing['image'] = listing_images[0]['image_path'] if listing_images else None
-
-    try:
-        inquiry_counts = db.session.execute(
-            text('SELECT inqu_propid, COUNT(*) AS total FROM inquiries GROUP BY inqu_propid'),
-            {}
-        ).mappings().all()
-    except Exception:
-        inquiry_counts = []
-
-    inquiry_map = {row['inqu_propid']: row['total'] for row in inquiry_counts if row.get('inqu_propid')}
-
-    for listing in listings:
-        listing['inquiry_count'] = inquiry_map.get(listing['prop_id'], 0)
+    listings = _build_my_listings_payload(user.user_id)
 
     return render_template('my_listings.html', title='My Listings', listings=listings)
 

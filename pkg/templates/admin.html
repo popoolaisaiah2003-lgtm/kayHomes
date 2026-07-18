@@ -3,7 +3,7 @@
 {% block title %}Admin Dashboard - KayHomes{% endblock %}
 
 {% block main_content %}
-<div class="container py-5 fade-up">
+<div class="container py-5 fade-up" data-admin-stats-url="{{ url_for('admin_dashboard_stats_api') }}">
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
     <div>
       <h2 class="mb-1">Admin Dashboard</h2>
@@ -13,7 +13,7 @@
       <a href="{{ url_for('admin_management') }}" class="btn btn-outline-secondary btn-sm">Admin Management</a>
       <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary btn-sm">Category Management</a>
       <a href="{{ url_for('admin_contact_messages') }}" class="btn btn-outline-primary btn-sm">
-        📩 Messages{% if unread_messages_count and unread_messages_count > 0 %} <span class="badge bg-danger ms-1">{{ unread_messages_count }}</span>{% endif %}
+        📩 Messages <span id="adminUnreadMessagesBadge" class="badge bg-danger ms-1 {% if not unread_messages_count or unread_messages_count <= 0 %}d-none{% endif %}">{{ unread_messages_count or 0 }}</span>
       </a>
       <a href="{{ url_for('admin_profile') }}" class="btn btn-outline-secondary btn-sm">Admin Profile</a>
       <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-secondary btn-sm">Change Password</a>
@@ -28,7 +28,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Total Properties</div>
-            <h4 class="mb-0 stat-number">{{ total_properties }}</h4>
+            <h4 id="adminTotalProperties" class="mb-0 stat-number">{{ total_properties }}</h4>
           </div>
           <i class="bi bi-building-fill"></i>
         </div>
@@ -39,7 +39,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Active Listings</div>
-            <h4 class="mb-0 stat-number">{{ active_listings }}</h4>
+            <h4 id="adminActiveListings" class="mb-0 stat-number">{{ active_listings }}</h4>
           </div>
           <i class="bi bi-check2-circle"></i>
         </div>
@@ -50,7 +50,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Users</div>
-            <h4 class="mb-0 stat-number">{{ users_count }}</h4>
+            <h4 id="adminUsersCount" class="mb-0 stat-number">{{ users_count }}</h4>
           </div>
           <i class="bi bi-people-fill"></i>
         </div>
@@ -61,7 +61,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Favorites</div>
-            <h4 class="mb-0 stat-number">{{ favorites_count }}</h4>
+            <h4 id="adminFavoritesCount" class="mb-0 stat-number">{{ favorites_count }}</h4>
           </div>
           <i class="bi bi-heart-fill"></i>
         </div>
@@ -72,7 +72,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Contact Messages</div>
-            <h4 class="mb-0 stat-number">{{ contact_messages_count }}</h4>
+            <h4 id="adminContactMessagesCount" class="mb-0 stat-number">{{ contact_messages_count }}</h4>
           </div>
           <i class="bi bi-envelope-paper-fill"></i>
         </div>
@@ -83,12 +83,25 @@
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="small opacity-75">Administrators</div>
-            <h4 class="mb-0 stat-number">{{ administrators_count }}</h4>
+            <h4 id="adminAdministratorsCount" class="mb-0 stat-number">{{ administrators_count }}</h4>
           </div>
           <i class="bi bi-shield-lock-fill"></i>
         </div>
       </div>
     </div>
+    {% if pending_approvals is not none %}
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-accent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Pending Approvals</div>
+            <h4 id="adminPendingApprovals" class="mb-0 stat-number">{{ pending_approvals }}</h4>
+          </div>
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="card border-0">

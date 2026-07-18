@@ -3,7 +3,7 @@
 {% block title %}{{ property['prop_title'] if property.get('prop_title') else 'Property' }} - KayHomes{% endblock %}
 
 {% block main_content %}
-<div class="details-page fade-up">
+<div class="details-page fade-up" data-property-detail data-poll-url="{{ url_for('property_detail_api', property_id=property['prop_id']) }}" data-placeholder-image="{{ url_for('static', filename='images/img1.jpg') }}">
     <div class="container my-5">
         <div class="row">
             <div class="col-md-8">
@@ -13,11 +13,10 @@
                 <img id="mainPropertyImage" src="{{ url_for('static', filename='images/img1.jpg') }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
                 {% endif %}
 
-                {% if gallery_images %}
-                  <div class="row row-cols-3 row-cols-md-5 g-2" id="propertyGallery">
+                  <div class="row row-cols-3 row-cols-md-5 g-2 {% if not (cover_image or gallery_images) %}d-none{% endif %}" id="propertyGallery">
                     {% if cover_image %}
                       <div class="col">
-                        <img src="{{ url_for('static', filename='uploads/' ~ cover_image) }}" class="img-fluid rounded border gallery-thumb active-thumb" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Cover image" data-full="{{ url_for('static', filename='uploads/' ~ cover_image) }}">
+                        <img src="{{ url_for('static', filename='uploads/' ~ cover_image) }}" class="img-fluid rounded border gallery-thumb active-thumb border-primary" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Cover image" data-full="{{ url_for('static', filename='uploads/' ~ cover_image) }}">
                       </div>
                     {% endif %}
                     {% for img in gallery_images %}
@@ -26,27 +25,26 @@
                       </div>
                     {% endfor %}
                   </div>
-                {% endif %}
             </div>
 
             <div class="col-md-4">
               <div class="card border-0 p-4 h-100">
-              <h1 class="property-name-title">{{ property['prop_title'] }}</h1>
-              <h2 class="property-price-tag">{{ property['prop_price'] }}</h2>
-                <p class="property-location-text">{{ property['prop_location'] }}, {{ property['prop_state'] }}</p>
+              <h1 id="propertyDetailTitle" class="property-name-title">{{ property['prop_title'] }}</h1>
+              <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price'] }}</h2>
+                <p id="propertyDetailLocation" class="property-location-text">{{ property['prop_location'] }}, {{ property['prop_state'] }}</p>
 
                 <hr class="section-divider">
 
                 <div class="description-section mb-4">
                     <h4 class="sub-heading">Description</h4>
-                    <p class="description-text">{{ property['prop_desc'] }}</p>
+                  <p id="propertyDetailDescription" class="description-text">{{ property['prop_desc'] }}</p>
                 </div>
 
                 <hr class="section-divider">
 
                 <div class="features-section mb-4">
                     <h4 class="sub-heading">Address</h4>
-                    <p>{{ property['prop_address'] }}</p>
+                  <p id="propertyDetailAddress">{{ property['prop_address'] }}</p>
                 </div>
 
               <div class="details-action-buttons">
@@ -67,7 +65,7 @@
                         type="button"
                         class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %} w-100 mb-3"
                         data-property-id="{{ property['prop_id'] }}"
-                        data-toggle-url="{{ url_for('favorite_toggle', property_id=property['prop_id']) }}"
+                        data-favorite-toggle-url="{{ url_for('favorite_toggle', property_id=property['prop_id']) }}"
                       >
                         {% if is_favorite %}❤️ Saved{% else %}🤍 Save{% endif %}
                       </button>
@@ -110,43 +108,4 @@
         {% endif %}
     </div>
 </div>
-
-<script>
-  const mainImageEl = document.getElementById('mainPropertyImage');
-  const thumbs = document.querySelectorAll('.gallery-thumb');
-  thumbs.forEach((thumb) => {
-    thumb.addEventListener('click', () => {
-      if (!mainImageEl) return;
-      const full = thumb.getAttribute('data-full');
-      if (full) {
-        mainImageEl.src = full;
-      }
-      thumbs.forEach((t) => t.classList.remove('active-thumb', 'border-primary'));
-      thumb.classList.add('active-thumb', 'border-primary');
-    });
-  });
-
-  const favBtn = document.getElementById('favoriteToggle');
-  if (favBtn) {
-    favBtn.addEventListener('click', async () => {
-      const toggleUrl = favBtn.dataset.toggleUrl;
-      favBtn.disabled = true;
-      const response = await fetch(toggleUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      const data = await response.json();
-      if (response.ok && data.is_favorite !== undefined) {
-        favBtn.classList.toggle('btn-danger', data.is_favorite);
-        favBtn.classList.toggle('btn-outline-danger', !data.is_favorite);
-        favBtn.textContent = data.is_favorite ? '❤️ Saved' : '🤍 Save';
-      } else {
-        console.error('Favorite toggle failed', data);
-      }
-      favBtn.disabled = false;
-    });
-  }
-</script>
 {% endblock %}

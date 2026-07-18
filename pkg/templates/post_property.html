@@ -71,7 +71,7 @@
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Local Government</label>
-            <select id="prop_lga" name="prop_lga" class="form-select" required>
+            <select id="prop_lga" name="prop_lga" class="form-select" data-selected-lga="{{ property_data.prop_lga if property_data and property_data.prop_lga else '' }}" required>
               <option value="">Select local government</option>
             </select>
           </div>
@@ -154,6 +154,9 @@
       const opt = document.createElement('option');
       opt.value = lga;
       opt.textContent = lga;
+      if (lgaEl.dataset.selectedLga && lgaEl.dataset.selectedLga === lga) {
+        opt.selected = true;
+      }
       lgaEl.appendChild(opt);
     });
   }

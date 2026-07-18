@@ -2,7 +2,7 @@ import os
 import secrets
 from functools import wraps
 
-from flask import flash, redirect, render_template, request, session, url_for
+from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import func, inspect, or_, text
 from email_validator import EmailNotValidError, validate_email
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -109,6 +109,71 @@ def _admin_account_counts():
         unread_messages = 0
 
     return total_admins, unread_messages
+
+
+def _admin_dashboard_stats_payload():
+    total_properties = Property.query.count() or 0
+    users_count = User.query.count() or 0
+
+    try:
+        favorites_count = Favorite.query.count() or 0
+    except Exception:
+        favorites_count = 0
+
+    try:
+        contact_messages_count = ContactMessage.query.count() or 0
+    except Exception:
+        contact_messages_count = 0
+
+    try:
+        unread_messages_count = ContactMessage.query.filter(ContactMessage.status == 'Unread').count() or 0
+    except Exception:
+        unread_messages_count = 0
+
+    try:
+        administrators_count = Admin.query.count() or 0
+    except Exception:
+        administrators_count = 0
+
+    property_columns = _property_columns()
+    status_column = None
+    for candidate in ('status', 'prop_status', 'listing_status'):
+        if candidate in property_columns:
+            status_column = candidate
+            break
+
+    if status_column and hasattr(Property, status_column):
+        active_listings = (
+            Property.query
+            .filter(getattr(Property, status_column) == 'Active')
+            .count()
+            or 0
+        )
+    else:
+        active_listings = total_properties
+
+    pending_approvals = None
+    if status_column and hasattr(Property, status_column):
+        try:
+            pending_approvals = (
+                Property.query
+                .filter(func.lower(getattr(Property, status_column)).in_(['pending', 'awaiting approval', 'review']))
+                .count()
+                or 0
+            )
+        except Exception:
+            pending_approvals = 0
+
+    return {
+        'total_properties': total_properties,
+        'active_listings': active_listings,
+        'users_count': users_count,
+        'favorites_count': favorites_count,
+        'contact_messages_count': contact_messages_count,
+        'unread_messages_count': unread_messages_count,
+        'administrators_count': administrators_count,
+        'pending_approvals': pending_approvals,
+    }
 
 
 @app.context_processor
@@ -632,28 +697,15 @@ def admin_dashboard():
     ensure_property_image_table()
     ensure_contact_message_table()
 
-    total_properties = Property.query.count() or 0
-    users_count = User.query.count() or 0
-
-    try:
-        favorites_count = Favorite.query.count() or 0
-    except Exception:
-        favorites_count = 0
-
-    try:
-        contact_messages_count = ContactMessage.query.count() or 0
-    except Exception:
-        contact_messages_count = 0
-
-    try:
-        unread_messages_count = ContactMessage.query.filter(ContactMessage.status == 'Unread').count() or 0
-    except Exception:
-        unread_messages_count = 0
-
-    try:
-        administrators_count = Admin.query.count() or 0
-    except Exception:
-        administrators_count = 0
+    stats = _admin_dashboard_stats_payload()
+    total_properties = stats['total_properties']
+    users_count = stats['users_count']
+    favorites_count = stats['favorites_count']
+    contact_messages_count = stats['contact_messages_count']
+    unread_messages_count = stats['unread_messages_count']
+    administrators_count = stats['administrators_count']
+    active_listings = stats['active_listings']
+    pending_approvals = stats['pending_approvals']
 
     property_columns = _property_columns()
     status_column = None
@@ -661,16 +713,6 @@ def admin_dashboard():
         if candidate in property_columns:
             status_column = candidate
             break
-
-    if status_column and hasattr(Property, status_column):
-        active_listings = (
-            Property.query
-            .filter(getattr(Property, status_column) == 'Active')
-            .count()
-            or 0
-        )
-    else:
-        active_listings = total_properties
 
     properties = Property.query.order_by(Property.prop_id.desc()).all()
 
@@ -717,8 +759,16 @@ def admin_dashboard():
         contact_messages_count=contact_messages_count,
         unread_messages_count=unread_messages_count,
         administrators_count=administrators_count,
+        pending_approvals=pending_approvals,
         properties=property_rows,
     )
+
+
+@app.route('/api/admin/dashboard/stats')
+@admin_required
+def admin_dashboard_stats_api():
+    ensure_contact_message_table()
+    return jsonify(_admin_dashboard_stats_payload())
 
 
 @app.route('/admin/contact-messages/')

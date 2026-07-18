@@ -14,10 +14,11 @@
     </a>
   </div>
 
+  <div data-my-listings-feed data-poll-url="{{ url_for('my_listings_updates_api') }}" data-post-url="{{ url_for('post_property') }}">
   {% if listings %}
-    <div class="row g-4">
+    <div id="myListingsFeed" class="row g-4" data-snapshot='{{ listings|tojson|safe }}'>
       {% for listing in listings %}
-        <div class="col-lg-6">
+        <div class="col-lg-6" data-property-id="{{ listing.prop_id }}">
           <div class="card shadow-sm border-0 h-100">
             <div class="row g-0 h-100">
               <div class="col-md-5">
@@ -38,11 +39,11 @@
                     </div>
                     <span class="badge bg-success-subtle text-success">{{ listing.listing_type or 'Active' }}</span>
                   </div>
-                  <p class="fw-semibold text-primary mb-3">₦{{ "{:,.0f}".format(listing.prop_price) }}</p>
+                  <p class="fw-semibold text-primary mb-3">{{ listing.prop_price_display if listing.prop_price_display is defined else ('₦' ~ "{:,.0f}".format(listing.prop_price)) }}</p>
                   <div class="small text-muted mb-3">
                     <div class="d-flex justify-content-between py-1"><span>Status</span><strong>Active</strong></div>
                     <div class="d-flex justify-content-between py-1"><span>Inquiries</span><strong>{{ listing.inquiry_count }}</strong></div>
-                    <div class="d-flex justify-content-between py-1"><span>Posted</span><strong>{{ listing.created_at.strftime('%b %d, %Y') if listing.created_at else 'Recently posted' }}</strong></div>
+                    <div class="d-flex justify-content-between py-1"><span>Posted</span><strong>{{ listing.created_at if listing.created_at else 'Recently posted' }}</strong></div>
                   </div>
                   <div class="mt-auto d-flex gap-2 flex-wrap">
                     <a href="{{ url_for('property_detail', property_id=listing.prop_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i>View</a>
@@ -59,7 +60,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="card shadow-sm border-0 text-center py-5">
+    <div id="myListingsFeed" data-snapshot="[]" class="card shadow-sm border-0 text-center py-5">
       <div class="card-body">
         <i class="bi bi-house-door display-4 text-muted mb-3"></i>
         <h4 class="fw-bold mb-2">No listings yet</h4>
@@ -68,5 +69,6 @@
       </div>
     </div>
   {% endif %}
+  </div>
 </div>
 {% endblock %}

@@ -1,18 +1,22 @@
-# ---------------------------------------------------------------
-# KayHomes – Configuration
-# ---------------------------------------------------------------
-
 import os
 
 DATABASE_URL = (
     os.getenv("DATABASE_URL")
     or os.getenv("MYSQL_URL")
-    or "mysql+pymysql://root:@localhost/kayhomes"
 )
+
+if DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace(
+        "mysql://",
+        "mysql+pymysql://",
+        1
+    )
+else:
+    DATABASE_URL = "mysql+pymysql://root:@localhost/kayhomes"
+
 print("DATABASE =", DATABASE_URL)
 
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
-
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 SECRET_KEY = os.getenv("SECRET_KEY", "securedkey")

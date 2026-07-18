@@ -1,13 +1,15 @@
-import os
-
 # ---------------------------------------------------------------
 # KayHomes – Configuration
 # ---------------------------------------------------------------
 
-DATABASE_URL = os.getenv(
-	"DATABASE_URL",
-	"mysql+pymysql://root:@localhost/kayhomes"
+import os
+
+DATABASE_URL = (
+    os.getenv("DATABASE_URL")
+    or os.getenv("MYSQL_URL")
+    or "mysql+pymysql://root:@localhost/kayhomes"
 )
+print("DATABASE =", DATABASE_URL)
 
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
 

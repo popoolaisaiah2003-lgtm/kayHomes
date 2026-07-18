@@ -693,7 +693,25 @@ def post_property(property_id=None):
         category_id = request.form.get('category_id', type=int)
         listing_type = request.form.get('listing_type')
         prop_desc = request.form.get('prop_desc')
-        prop_price = request.form.get('prop_price')
+        prop_price = request.form.get('prop_price', '')
+
+        # Clean the price before saving
+        prop_price = (
+            prop_price.replace('₦', '')
+                    .replace('N', '')
+                    .replace(',', '')
+                    .strip()
+        )
+
+        try:
+            prop_price = float(prop_price)
+        except ValueError:
+            flash("Please enter a valid property price.", "danger")
+            return redirect(
+                url_for('post_property', property_id=property_id)
+                if property_id else
+                url_for('post_property')
+            )
         prop_location = request.form.get('prop_location')
         prop_state = request.form.get('prop_state')
         prop_lga = request.form.get('prop_lga')

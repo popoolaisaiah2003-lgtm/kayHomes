@@ -25,13 +25,15 @@
 
   {% include 'header.html' %}
 
-  {% set no_back_button_endpoints = ['home', 'login', 'register', 'admin_login', 'admin_register'] %}
-  {% if request.endpoint not in no_back_button_endpoints %}
+  {% set endpoint_name = request.endpoint or '' %}
+  {% set no_back_button_endpoints = ['home', 'login', 'register', 'admin_login', 'admin_register', 'admin_dashboard'] %}
+  {% set fallback_endpoint = 'admin_dashboard' if endpoint_name.startswith('admin_') else 'home' %}
+  {% if endpoint_name not in no_back_button_endpoints %}
     <div class="kh-content-container pt-3 pb-0">
       <button
         type="button"
         class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
-        onclick="return handleBackNavigation('{{ url_for('home') }}');"
+        onclick="return handleBackNavigation('{{ url_for(fallback_endpoint) }}');"
         aria-label="Go back to previous page"
       >
         <i class="bi bi-arrow-left" aria-hidden="true"></i>
@@ -94,9 +96,9 @@
               <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
             </a>
             <p class="mb-3">KayHomes helps renters and homeowners discover premium listings with trusted agents, transparent details, and a seamless discovery journey.</p>
-            <p class="small mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Abuja, Nigeria</p>
-            <p class="small mb-0"><i class="bi bi-telephone-fill me-2"></i>+234 801 234 5678</p>
-            <p class="small mb-0"><i class="bi bi-envelope-fill me-2"></i>hello@kayhomes.ng</p>
+            <p class="small mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Lagos, Nigeria</p>
+            <p class="small mb-0"><i class="bi bi-telephone-fill me-2"></i>+2349010580281</p>
+            <p class="small mb-0"><i class="bi bi-envelope-fill me-2"></i>kaydevs.com@gmail.com</p>
           </div>
 
           <div class="col-6 col-lg-2">

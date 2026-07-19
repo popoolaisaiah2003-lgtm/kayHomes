@@ -5,15 +5,23 @@ import os
 # This file is NOT committed to Git. Keep credentials here only.
 # ---------------------------------------------------------------
 
-DATABASE_URL = os.getenv(
-	"DATABASE_URL",
-	"mysql+pymysql://root:@localhost/kayhomes"
+DATABASE_URL = (
+    os.getenv("DATABASE_URL")
+    or os.getenv("MYSQL_URL")
 )
 
+if DATABASE_URL:
+    if DATABASE_URL.startswith("mysql://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "mysql://",
+            "mysql+pymysql://",
+            1
+        )
+else:
+    DATABASE_URL = "mysql+pymysql://root:@localhost/kayhomes"
+
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
-
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-
 SECRET_KEY = os.getenv("SECRET_KEY", "securedkey")
 
 # Mail settings for forgot-password emails.

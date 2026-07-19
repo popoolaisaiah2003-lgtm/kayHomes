@@ -26,15 +26,6 @@ cloudinary.config(
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'securedkey'))
 
-database_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
-
-if database_url:
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace(
-        "mysql://",
-        "mysql+pymysql://",
-        1
-    )
-
 app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:@localhost/kayhomes')
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 

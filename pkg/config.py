@@ -6,11 +6,12 @@ DATABASE_URL = (
 )
 
 if DATABASE_URL:
-    DATABASE_URL = DATABASE_URL.replace(
-        "mysql://",
-        "mysql+pymysql://",
-        1
-    )
+    if DATABASE_URL.startswith("mysql://"):
+        DATABASE_URL = DATABASE_URL.replace(
+            "mysql://",
+            "mysql+pymysql://",
+            1
+        )
 else:
     DATABASE_URL = "mysql+pymysql://root:@localhost/kayhomes"
 

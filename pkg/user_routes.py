@@ -1721,6 +1721,16 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
 
+        print("=" * 80)
+        print("RUNNING FILE:", __file__)
+        print("DATABASE_URL ENV =", os.getenv("DATABASE_URL"))
+        print("MYSQL_URL ENV =", os.getenv("MYSQL_URL"))
+        print("INSTANCE PATH =", app.instance_path)
+        print("INSTANCE CONFIG EXISTS =", os.path.exists(os.path.join(app.instance_path, "config.py")))
+        print("CONFIG DATABASE_URL =", app.config.get("DATABASE_URL"))
+        print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
+        print("=" * 80)
+
         user = User.query.filter_by(
             user_email=email
         ).first()

@@ -1,3 +1,5 @@
+import cloudinary
+import cloudinary.uploader
 from flask import render_template, request, redirect, url_for, session, flash, abort, jsonify
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -292,14 +294,18 @@ def save_property_images(property_id, image_files, existing_count=0):
             return False, f'{file_item.filename} appears corrupted or is not a valid image file.'
 
     saved_files = []
-    upload_path = app.config['UPLOAD_FOLDER']
+
     try:
         for file_item in valid_files:
-            safe_source_name = secure_filename(file_item.filename)
-            unique_filename = generate_unique_upload_name(safe_source_name)
-            file_path = os.path.join(upload_path, unique_filename)
-            file_item.save(file_path)
-            saved_files.append(unique_filename)
+
+            upload_result = cloudinary.uploader.upload(
+                file_item,
+                folder="kayhomes/properties"
+            )
+
+            image_url = upload_result["secure_url"]
+
+            saved_files.append(image_url)
 
             if cols['uploaded_at']:
                 insert_stmt = text(f'''
@@ -311,18 +317,32 @@ def save_property_images(property_id, image_files, existing_count=0):
                     INSERT INTO property_image ({cols['property_id']}, {cols['path']})
                     VALUES (:pid, :img)
                 ''')
-            db.session.execute(insert_stmt, {'pid': property_id, 'img': unique_filename})
+
+            db.session.execute(
+                insert_stmt,
+                {
+                    "pid": property_id,
+                    "img": image_url
+                }
+            )
 
         db.session.commit()
         return True, None
+
     except Exception as e:
         app.logger.exception('Image save failed for property_id=%s', property_id)
 
         db.session.rollback()
 
-        for filename in saved_files:
+        for image_url in saved_files:
             try:
-                os.remove(os.path.join(upload_path, filename))
+                public_id = image_url.split("/upload/")[1]
+                public_id = public_id.split(".", 1)[0]
+
+                if "/" in public_id:
+                    public_id = public_id.split("/", 1)[1]
+
+                cloudinary.uploader.destroy(public_id)
             except Exception:
                 pass
 
@@ -395,8 +415,16 @@ def _placeholder_property_image_url():
 def _upload_image_url(image_name):
     if not image_name:
         return _placeholder_property_image_url()
-    return url_for('static', filename=f'uploads/{image_name}')
 
+    # If it's already a Cloudinary URL, return it directly
+    if image_name.startswith("http://") or image_name.startswith("https://"):
+        return image_name
+
+    # Otherwise, treat it as a local upload
+    return url_for(
+        "static",
+        filename=f"uploads/{image_name}"
+    )
 
 def _serialize_property_model(property_obj):
     image_rows = get_property_images(property_obj.prop_id)

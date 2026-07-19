@@ -1,3 +1,7 @@
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 from flask import Flask
 from flask_mail import Mail
 from pkg.models import db
@@ -5,16 +9,33 @@ from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 import os
 
+
 app = Flask(__name__, instance_relative_config=True)
 
 # Load instance configuration before initializing extensions.
 os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_object('pkg.config')
 app.config.from_pyfile('config.py', silent=True)
+
+
+cloudinary.config(
+    cloud_name=app.config.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=app.config.get("CLOUDINARY_API_KEY"),
+    api_secret=app.config.get("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'securedkey'))
 
-if os.getenv('DATABASE_URL'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+database_url = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+
+if database_url:
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace(
+        "mysql://",
+        "mysql+pymysql://",
+        1
+    )
+    
 app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:@localhost/kayhomes')
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 

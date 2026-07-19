@@ -15,7 +15,12 @@ app = Flask(__name__, instance_relative_config=True)
 # Load instance configuration before initializing extensions.
 os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_object('pkg.config')
+
+print("AFTER pkg.config =", app.config.get("SQLALCHEMY_DATABASE_URI"))
+
 app.config.from_pyfile('config.py', silent=True)
+
+print("AFTER instance config =", app.config.get("SQLALCHEMY_DATABASE_URI"))
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -44,7 +49,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 print("=" * 80)
-print("FINAL SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
+print("CONFIG FILE:", app.instance_path)
+print("DATABASE_URL =", app.config.get("DATABASE_URL"))
+print("MYSQL_URL =", os.getenv("MYSQL_URL"))
+print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
 print("=" * 80)
 
 db.init_app(app)

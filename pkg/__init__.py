@@ -26,7 +26,6 @@ cloudinary.config(
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'securedkey'))
 
-app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:@localhost/kayhomes')
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
 app.config.setdefault('MAIL_SERVER', '127.0.0.1')
@@ -43,6 +42,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+print("=" * 80)
+print("FINAL SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
+print("=" * 80)
 
 db.init_app(app)
 mail = Mail(app)

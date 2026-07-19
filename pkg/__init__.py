@@ -17,11 +17,10 @@ os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_object('pkg.config')
 app.config.from_pyfile('config.py', silent=True)
 
-
 cloudinary.config(
-    cloud_name=app.config.get("CLOUDINARY_CLOUD_NAME"),
-    api_key=app.config.get("CLOUDINARY_API_KEY"),
-    api_secret=app.config.get("CLOUDINARY_API_SECRET"),
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
     secure=True
 )
 
@@ -35,7 +34,7 @@ if database_url:
         "mysql+pymysql://",
         1
     )
-    
+
 app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:@localhost/kayhomes')
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 

@@ -21,6 +21,10 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 SECRET_KEY = os.getenv("SECRET_KEY", "securedkey")
 
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
 MAIL_SERVER = os.getenv("MAIL_SERVER", "127.0.0.1")
 MAIL_PORT = int(os.getenv("MAIL_PORT", "25"))
 MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "false").lower() == "true"

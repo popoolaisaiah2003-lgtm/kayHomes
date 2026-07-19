@@ -1131,7 +1131,14 @@ def property_detail(property_id):
     image_rows = get_property_images(property_id)
     images = [row['image_path'] for row in image_rows]
     cover_image = images[0] if images else None
-    gallery_images = images[1:] if len(images) > 1 else []
+    cover_image_url = _upload_image_url(cover_image)
+    gallery_images = [
+        {
+            'image_path': image_name,
+            'image_url': _upload_image_url(image_name),
+        }
+        for image_name in images[1:]
+    ] if len(images) > 1 else []
 
     try:
         other_rows = db.session.execute(
@@ -1143,6 +1150,7 @@ def property_detail(property_id):
             prop = dict(row)
             prop_images = get_property_images(prop['prop_id'])
             prop['cover_image'] = prop_images[0]['image_path'] if prop_images else None
+            prop['cover_image_url'] = _upload_image_url(prop['cover_image'])
             other_properties.append(prop)
     except Exception:
         other_properties = []
@@ -1155,6 +1163,7 @@ def property_detail(property_id):
         owner=owner,
         images=images,
         cover_image=cover_image,
+        cover_image_url=cover_image_url,
         gallery_images=gallery_images,
         other_properties=other_properties,
         can_message=can_message,

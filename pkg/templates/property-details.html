@@ -8,7 +8,7 @@
     <div class="row g-4">
       <div class="col-lg-8">
                 {% if cover_image %}
-                <img id="mainPropertyImage" src="{{ url_for('static', filename='uploads/' ~ cover_image) }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
+                <img id="mainPropertyImage" src="{{ cover_image_url }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
                 {% else %}
                 <img id="mainPropertyImage" src="{{ url_for('static', filename='images/img1.jpg') }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
                 {% endif %}
@@ -16,12 +16,12 @@
                   <div class="row row-cols-3 row-cols-md-5 g-2 {% if not (cover_image or gallery_images) %}d-none{% endif %}" id="propertyGallery">
                     {% if cover_image %}
                       <div class="col">
-                        <img src="{{ url_for('static', filename='uploads/' ~ cover_image) }}" class="img-fluid rounded border gallery-thumb active-thumb border-primary" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Cover image" data-full="{{ url_for('static', filename='uploads/' ~ cover_image) }}">
+                        <img src="{{ cover_image_url }}" class="img-fluid rounded border gallery-thumb active-thumb border-primary" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Cover image" data-full="{{ cover_image_url }}">
                       </div>
                     {% endif %}
                     {% for img in gallery_images %}
                       <div class="col">
-                        <img src="{{ url_for('static', filename='uploads/' ~ img) }}" class="img-fluid rounded border gallery-thumb" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Property image {{ loop.index + 1 }}" data-full="{{ url_for('static', filename='uploads/' ~ img) }}">
+                        <img src="{{ img.image_url }}" class="img-fluid rounded border gallery-thumb" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Property image {{ loop.index + 1 }}" data-full="{{ img.image_url }}">
                       </div>
                     {% endfor %}
                   </div>
@@ -91,7 +91,7 @@
             <div class="col-sm-12 col-md-6 col-lg-4 mb-4">
               <div class="card h-100">
                 {% if other.get('cover_image') %}
-                  <img src="{{ url_for('static', filename='uploads/' ~ other['cover_image']) }}" class="card-img-top" alt="{{ other['prop_title'] }}" style="height: 190px; object-fit: cover;">
+                  <img src="{{ other['cover_image_url'] }}" class="card-img-top" alt="{{ other['prop_title'] }}" style="height: 190px; object-fit: cover;">
                 {% else %}
                   <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ other['prop_title'] }}" style="height: 190px; object-fit: cover;">
                 {% endif %}

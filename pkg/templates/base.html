@@ -59,16 +59,9 @@
 
   <script>
     function handleBackNavigation(homeUrl) {
-      if (window.history.length > 1 && document.referrer) {
-        try {
-          var referrerUrl = new URL(document.referrer);
-          if (referrerUrl.origin === window.location.origin) {
-            window.history.back();
-            return false;
-          }
-        } catch (error) {
-          // Ignore malformed referrer and fall back to home.
-        }
+      if (window.history.length > 1) {
+        window.history.back();
+        return false;
       }
 
       window.location.href = homeUrl;

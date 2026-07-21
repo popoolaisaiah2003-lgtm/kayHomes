@@ -635,7 +635,24 @@ def login_required(view_func):
             flash('Please log in or create an account to continue using KayHomes.', 'warning')
             return redirect(url_for('login'))
         return view_func(*args, **kwargs)
+    wrapped_view._requires_login = True
     return wrapped_view
+
+
+def _authenticated_entry_redirect():
+    # Authenticated users should not revisit auth forms.
+    return redirect(url_for('properties'))
+
+
+@app.after_request
+def _apply_authenticated_no_cache_headers(response):
+    endpoint = request.endpoint or ''
+    view_func = app.view_functions.get(endpoint)
+    if session.get('user_id') and view_func and getattr(view_func, '_requires_login', False):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 
 @app.context_processor
@@ -643,9 +660,15 @@ def inject_unread_count():
     unread_count = 0
     if session.get('user_id'):
         unread_count = _get_unread_message_count(session['user_id'])
+
+    endpoint = request.endpoint or ''
+    view_func = app.view_functions.get(endpoint)
+    is_authenticated_page = bool(view_func and getattr(view_func, '_requires_login', False))
+
     return {
         'unread_count': unread_count,
         'current_theme': get_current_theme(),
+        'is_authenticated_page': is_authenticated_page,
     }
 
 
@@ -912,6 +935,8 @@ def properties():
         empty_message = None
         empty_subtext = None
 
+    post_login_history_fix = bool(session.pop('post_login_history_fix', False))
+
     return render_template(
         'properties.html',
         title='Properties',
@@ -924,6 +949,7 @@ def properties():
         search_query=search_query,
         empty_message=empty_message,
         empty_subtext=empty_subtext,
+        post_login_history_fix=post_login_history_fix,
     )
 
 
@@ -1578,6 +1604,9 @@ def messages():
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
 
+    if session.get('user_id'):
+        return _authenticated_entry_redirect()
+
     if request.method == 'POST':
 
         fname = request.form.get('fname')
@@ -1716,20 +1745,13 @@ def reset_password(token):
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
 
+    if session.get('user_id'):
+        return _authenticated_entry_redirect()
+
     if request.method == 'POST':
 
         email = request.form.get('email')
         password = request.form.get('password')
-
-        print("=" * 80)
-        print("RUNNING FILE:", __file__)
-        print("DATABASE_URL ENV =", os.getenv("DATABASE_URL"))
-        print("MYSQL_URL ENV =", os.getenv("MYSQL_URL"))
-        print("INSTANCE PATH =", app.instance_path)
-        print("INSTANCE CONFIG EXISTS =", os.path.exists(os.path.join(app.instance_path, "config.py")))
-        print("CONFIG DATABASE_URL =", app.config.get("DATABASE_URL"))
-        print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
-        print("=" * 80)
 
         user = User.query.filter_by(
             user_email=email
@@ -1743,6 +1765,7 @@ def login():
             session['user_id'] = user.user_id
             session['user_name'] = user.user_fname
             session['theme'] = _normalized_theme(getattr(user, 'theme', 'light'))
+            session['post_login_history_fix'] = True
             flash('Welcome back.', 'success')
             return _redirect_after_auth('properties')
 

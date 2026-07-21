@@ -15,8 +15,6 @@ if DATABASE_URL:
 else:
     DATABASE_URL = "mysql+pymysql://root:@localhost/kayhomes"
 
-print("DATABASE =", DATABASE_URL)
-
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

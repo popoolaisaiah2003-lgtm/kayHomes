@@ -118,6 +118,25 @@
   </div>
 
   <script>
+    {% if post_login_history_fix %}
+    (function () {
+      if (!(window.history && window.history.replaceState && window.history.pushState)) {
+        return;
+      }
+
+      try {
+        window.history.replaceState({ khEntry: 'properties' }, '', window.location.href);
+        window.history.pushState({ khBackToHome: true }, '', window.location.href);
+        window.addEventListener('popstate', function onPop() {
+          window.removeEventListener('popstate', onPop);
+          window.location.assign('{{ url_for('home') }}');
+        }, { once: true });
+      } catch (error) {
+        // Keep default browser behavior if History API is unavailable or blocked.
+      }
+    })();
+    {% endif %}
+
     const categoryToggle = document.getElementById('categoryToggle');
     const categoryClose = document.getElementById('categoryClose');
     const categorySidebar = document.getElementById('categorySidebar');

@@ -15,26 +15,8 @@ app = Flask(__name__, instance_relative_config=True)
 # Load instance configuration before initializing extensions.
 os.makedirs(app.instance_path, exist_ok=True)
 app.config.from_object('pkg.config')
-print("=" * 80)
-print("RUNNING FILE:", __file__)
-print("DATABASE_URL ENV =", os.getenv("DATABASE_URL"))
-print("MYSQL_URL ENV =", os.getenv("MYSQL_URL"))
-print("INSTANCE PATH =", app.instance_path)
-print("INSTANCE CONFIG EXISTS =", os.path.exists(os.path.join(app.instance_path, "config.py")))
-print("CONFIG DATABASE_URL =", app.config.get("DATABASE_URL"))
-print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
-print("=" * 80)
 
 app.config.from_pyfile('config.py', silent=True)
-print("=" * 80)
-print("RUNNING FILE:", __file__)
-print("DATABASE_URL ENV =", os.getenv("DATABASE_URL"))
-print("MYSQL_URL ENV =", os.getenv("MYSQL_URL"))
-print("INSTANCE PATH =", app.instance_path)
-print("INSTANCE CONFIG EXISTS =", os.path.exists(os.path.join(app.instance_path, "config.py")))
-print("CONFIG DATABASE_URL =", app.config.get("DATABASE_URL"))
-print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
-print("=" * 80)
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
@@ -61,15 +43,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-print("=" * 80)
-print("RUNNING FILE:", __file__)
-print("DATABASE_URL ENV =", os.getenv("DATABASE_URL"))
-print("MYSQL_URL ENV =", os.getenv("MYSQL_URL"))
-print("INSTANCE PATH =", app.instance_path)
-print("INSTANCE CONFIG EXISTS =", os.path.exists(os.path.join(app.instance_path, "config.py")))
-print("CONFIG DATABASE_URL =", app.config.get("DATABASE_URL"))
-print("SQLALCHEMY_DATABASE_URI =", app.config.get("SQLALCHEMY_DATABASE_URI"))
-print("=" * 80)
 
 db.init_app(app)
 mail = Mail(app)
@@ -146,7 +119,7 @@ def ensure_admin_schema_compatibility():
                 db.session.commit()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
-            print(f'Skipping admin schema compatibility due to database error: {exc}')
+            app.logger.warning('Skipping admin schema compatibility due to database error: %s', exc)
 
 
 def ensure_category_schema_compatibility():
@@ -304,7 +277,7 @@ def ensure_category_schema_compatibility():
                     db.session.rollback()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
-            print(f'Skipping category schema compatibility due to database error: {exc}')
+            app.logger.warning('Skipping category schema compatibility due to database error: %s', exc)
 
 
 def ensure_user_theme_schema_compatibility():
@@ -333,7 +306,7 @@ def ensure_user_theme_schema_compatibility():
                 db.session.commit()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
-            print(f'Skipping user theme schema compatibility due to database error: {exc}')
+            app.logger.warning('Skipping user theme schema compatibility due to database error: %s', exc)
 
 
 def ensure_runtime_tables_compatibility():
@@ -434,7 +407,7 @@ def ensure_runtime_tables_compatibility():
                 db.session.commit()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
-            print(f'Skipping runtime tables compatibility due to database error: {exc}')
+            app.logger.warning('Skipping runtime tables compatibility due to database error: %s', exc)
 
 
 def initialize_database():
@@ -448,7 +421,7 @@ def initialize_database():
             ensure_runtime_tables_compatibility()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
-            print(f'Database initialization skipped: {exc}')
+            app.logger.warning('Database initialization skipped: %s', exc)
 
 
 from pkg import user_routes, admin_routes

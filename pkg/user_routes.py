@@ -901,6 +901,7 @@ def properties():
         all_rentals_count = len(property_rows) if not selected_category_obj and not search_query else 0
 
     properties = []
+
     for row in property_rows:
         prop = {
             'prop_id': row.prop_id,
@@ -913,9 +914,21 @@ def properties():
             'prop_state': row.prop_state,
             'prop_address': row.prop_address,
         }
+
         images = get_property_images(row.prop_id)
-        prop['cover_image'] = images[0]['image_path'] if images else None
+
+        if images:
+            first_image = images[0]
+
+            if 'image_url' in first_image:
+                prop['cover_image'] = first_image['image_url']
+            else:
+                prop['cover_image'] = _upload_image_url(first_image['image_path'])
+        else:
+            prop['cover_image'] = None
+
         prop['short_desc'] = (row.prop_desc or '')[:160]
+
         properties.append(prop)
 
     if not properties:

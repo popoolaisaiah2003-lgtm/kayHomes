@@ -916,6 +916,7 @@ def properties():
         }
 
         images = get_property_images(row.prop_id)
+        print(f"Property {row.prop_id} images: {images}")
 
         if images:
             first_image = images[0]

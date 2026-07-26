@@ -111,6 +111,7 @@
           <thead class="table-light">
             <tr>
               <th>ID</th>
+              <th>Image</th>
               <th>Property</th>
               <th>State</th>
               <th>Category</th>
@@ -125,6 +126,9 @@
               {% for property in properties %}
                 <tr>
                   <td>{{ property.prop_id }}</td>
+                  <td>
+                    <img src="{{ property.cover_image_url or url_for('static', filename='images/img1.jpg') }}" alt="{{ property.prop_title }}" class="rounded" style="width:72px; height:52px; object-fit:cover;">
+                  </td>
                   <td>{{ property.prop_title }}</td>
                   <td>{{ property.prop_state }}</td>
                   <td>{{ property.category }}</td>
@@ -148,7 +152,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="8" class="text-center text-muted py-4">No properties available.</td>
+                <td colspan="9" class="text-center text-muted py-4">No properties available.</td>
               </tr>
             {% endif %}
           </tbody>

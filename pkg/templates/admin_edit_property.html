@@ -95,7 +95,7 @@
         <div class="row g-3">
           {% for image in existing_images %}
             <div class="col-6 col-md-3">
-              <img src="{{ url_for('static', filename='uploads/' ~ image.image_path) }}" alt="Property image" class="img-fluid rounded" style="height:130px; width:100%; object-fit:cover;">
+              <img src="{{ image.image_url }}" alt="Property image" class="img-fluid rounded" style="height:130px; width:100%; object-fit:cover;">
             </div>
           {% endfor %}
         </div>

@@ -12,6 +12,8 @@ from pkg import app, ensure_admin_schema_compatibility, ensure_category_schema_c
 from pkg.models import Admin, Category, ContactMessage, Favorite, Property, User, db
 from pkg.user_routes import (
     MAX_PROPERTY_IMAGES,
+    _serialize_property_model,
+    _upload_image_url,
     delete_image_file,
     ensure_contact_message_table,
     ensure_property_image_table,
@@ -738,6 +740,8 @@ def admin_dashboard():
         if status_column and hasattr(item, status_column):
             raw_status = getattr(item, status_column) or 'Active'
 
+        serialized = _serialize_property_model(item)
+
         property_rows.append({
             'prop_id': item.prop_id,
             'prop_title': item.prop_title,
@@ -745,6 +749,7 @@ def admin_dashboard():
             'category': item.listing_type or item.prop_type or 'Property',
             'prop_type': item.prop_type,
             'prop_price': item.prop_price,
+            'cover_image_url': serialized.get('cover_image_url'),
             'status': raw_status,
             'date_posted': posted_date_map.get(item.prop_id),
         })
@@ -945,6 +950,11 @@ def admin_edit_property(property_id):
         return redirect(url_for('admin_dashboard'))
 
     existing_images = get_property_images(property_id)
+    existing_images_with_url = []
+    for image in existing_images:
+        image_copy = dict(image)
+        image_copy['image_url'] = _upload_image_url(image.get('image_path'))
+        existing_images_with_url.append(image_copy)
 
     property_payload = {
         'prop_id': property_item.prop_id,
@@ -963,7 +973,7 @@ def admin_edit_property(property_id):
         'admin_edit_property.html',
         title='Edit Property',
         property_data=property_payload,
-        existing_images=existing_images,
+        existing_images=existing_images_with_url,
         max_property_images=MAX_PROPERTY_IMAGES,
         has_status=status_column is not None,
     )

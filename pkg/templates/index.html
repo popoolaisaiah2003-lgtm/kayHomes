@@ -81,11 +81,7 @@
             <div class="col">
               <a href="{{ url_for('property_detail', property_id=property.prop_id) }}" class="text-decoration-none text-reset">
                 <div class="card property-card h-100 shadow-sm border-0">
-                  {% if property.cover_image %}
-                    <img src="{{ url_for('static', filename='uploads/' ~ property.cover_image) }}" class="card-img-top" alt="{{ property.prop_title }}" style="height: 240px; object-fit: cover;">
-                  {% else %}
-                    <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ property.prop_title }}" style="height: 240px; object-fit: cover;">
-                  {% endif %}
+                  <img src="{{ property.cover_image_url or url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ property.prop_title }}" style="height: 240px; object-fit: cover;">
                   <div class="card-body">
                     <h5 class="card-title">{{ property.prop_title }}</h5>
                     <p class="card-text text-muted mb-2">{{ property.prop_location }}{% if property.prop_state %} - {{ property.prop_state }}{% endif %}</p>

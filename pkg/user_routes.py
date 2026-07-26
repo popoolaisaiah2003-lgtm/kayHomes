@@ -676,18 +676,17 @@ def inject_unread_count():
 def home():
     ensure_property_image_table()
     try:
-        rows = db.session.execute(
-            text('SELECT * FROM property ORDER BY prop_id DESC LIMIT 6')
-        ).mappings().all()
+        property_rows = (
+            Property.query
+            .options(joinedload(Property.category))
+            .order_by(Property.prop_id.desc())
+            .limit(6)
+            .all()
+        )
     except Exception:
-        rows = []
+        property_rows = []
 
-    featured_properties = []
-    for row in rows:
-        prop = dict(row)
-        images = get_property_images(prop['prop_id'])
-        prop['cover_image'] = images[0]['image_path'] if images else None
-        featured_properties.append(prop)
+    featured_properties = [_serialize_property_model(row) for row in property_rows]
 
     users_count = 0
     property_count = 0

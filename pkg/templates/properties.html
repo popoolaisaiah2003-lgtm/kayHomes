@@ -78,7 +78,7 @@
           {% endif %}
         </div>
 
-        <div id="propertyResults" class="row g-4 property-results fade-up" data-properties-feed data-poll-url="{{ url_for('properties_updates_api') }}" data-before-id="{{ properties[0]['prop_id'] if properties else 0 }}" data-category-id="{{ selected_category_id if selected_category_id is not none else '' }}" data-search-query="{{ search_query }}">
+        <div id="propertyResults" class="row g-4 property-results fade-up" data-properties-feed data-poll-url="{{ url_for('properties_updates_api') }}" data-before-id="{{ properties[0]['prop_id'] if properties else 0 }}" data-category-id="{{ selected_category_id if selected_category_id is not none else '' }}" data-search-query="{{ search_query }}" data-post-login-history-fix="{{ 'true' if post_login_history_fix else 'false' }}" data-home-url="{{ url_for('home') }}">
           {% if properties %}
             {% for prop in properties %}
               <div class="col-sm-12 col-md-6 col-lg-4" data-property-id="{{ prop['prop_id'] }}">
@@ -118,24 +118,28 @@
   </div>
 
   <script>
-    {% if post_login_history_fix %}
-    (function () {
-      if (!(window.history && window.history.replaceState && window.history.pushState)) {
-        return;
-      }
+    const propertyResultsFeed = document.getElementById('propertyResults');
+    const postLoginHistoryFix = propertyResultsFeed && propertyResultsFeed.dataset.postLoginHistoryFix === 'true';
+    const homeUrl = propertyResultsFeed ? propertyResultsFeed.dataset.homeUrl : '/';
 
-      try {
-        window.history.replaceState({ khEntry: 'properties' }, '', window.location.href);
-        window.history.pushState({ khBackToHome: true }, '', window.location.href);
-        window.addEventListener('popstate', function onPop() {
-          window.removeEventListener('popstate', onPop);
-          window.location.assign('{{ url_for('home') }}');
-        }, { once: true });
-      } catch (error) {
-        // Keep default browser behavior if History API is unavailable or blocked.
-      }
-    })();
-    {% endif %}
+    if (postLoginHistoryFix) {
+      (function () {
+        if (!(window.history && window.history.replaceState && window.history.pushState)) {
+          return;
+        }
+
+        try {
+          window.history.replaceState({ khEntry: 'properties' }, '', window.location.href);
+          window.history.pushState({ khBackToHome: true }, '', window.location.href);
+          window.addEventListener('popstate', function onPop() {
+            window.removeEventListener('popstate', onPop);
+            window.location.assign(homeUrl);
+          }, { once: true });
+        } catch (error) {
+          // Keep default browser behavior if History API is unavailable or blocked.
+        }
+      })();
+    }
 
     const categoryToggle = document.getElementById('categoryToggle');
     const categoryClose = document.getElementById('categoryClose');

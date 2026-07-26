@@ -18,8 +18,8 @@
           <div class="card shadow-sm border-0 h-100">
             <div class="row g-0 h-100">
               <div class="col-md-5">
-                {% if property.image %}
-                  <img src="{{ url_for('static', filename='uploads/' ~ property.image) }}" alt="{{ property.prop_title }}" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover; min-height: 220px;">
+                {% if property.image_url %}
+                  <img src="{{ property.image_url }}" alt="{{ property.prop_title }}" class="img-fluid rounded-start h-100 w-100" style="object-fit: cover; min-height: 220px;">
                 {% else %}
                   <div class="h-100 d-flex align-items-center justify-content-center bg-kh-soft text-muted rounded-start" style="min-height: 220px;">
                     <i class="bi bi-image fs-1"></i>
@@ -35,7 +35,7 @@
                     </div>
                     <span class="badge bg-danger-subtle text-danger">Saved</span>
                   </div>
-                  <p class="fw-semibold text-primary mb-3">₦{{ "{:,.0f}".format(property.prop_price) }}</p>
+                  <p class="fw-semibold text-primary mb-3">{{ property.prop_price|naira }}</p>
                   <p class="small text-muted mb-3">Listed by {{ property.owner_name }}</p>
                   <div class="mt-auto d-flex gap-2 flex-wrap">
                     <a href="{{ url_for('property_detail', property_id=property.prop_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i>View</a>

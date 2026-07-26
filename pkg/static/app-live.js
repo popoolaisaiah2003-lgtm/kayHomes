@@ -380,7 +380,7 @@
               '<p class="card-text text-muted mb-2">' + escapeHtml(property.prop_location || '') + (property.prop_state ? ' - ' + escapeHtml(property.prop_state) : '') + '</p>' +
               '<p class="card-text mb-2"><strong>Type:</strong> ' + escapeHtml(property.prop_type || 'Property') + '</p>' +
               '<p class="card-text mb-3">' + escapeHtml(property.short_desc || '') + '</p>' +
-              '<p class="card-text fw-bold text-primary mb-3">' + escapeHtml(property.prop_price || '') + '</p>' +
+              '<p class="card-text fw-bold text-primary mb-3">' + escapeHtml(property.prop_price_display || property.prop_price || '') + '</p>' +
               '<a href="' + escapeHtml(property.detail_url) + '" class="btn btn-add-property w-100 mt-auto">View Details</a>' +
             '</div>' +
           '</div>' +
@@ -591,7 +591,7 @@
           title.textContent = payload.prop_title || '';
         }
         if (price) {
-          price.textContent = payload.prop_price || '';
+          price.textContent = payload.prop_price_display || payload.prop_price || '';
         }
         if (location) {
           location.textContent = [payload.prop_location || '', payload.prop_state || ''].filter(Boolean).join(', ');

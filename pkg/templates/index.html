@@ -86,7 +86,7 @@
                     <h5 class="card-title">{{ property.prop_title }}</h5>
                     <p class="card-text text-muted mb-2">{{ property.prop_location }}{% if property.prop_state %} - {{ property.prop_state }}{% endif %}</p>
                     <p class="card-text text-muted">{{ property.prop_desc|striptags|truncate(90) }}</p>
-                    <p class="fw-semibold text-primary mb-0">{{ property.prop_price }}</p>
+                    <p class="fw-semibold text-primary mb-0">{{ property.prop_price|naira }}</p>
                   </div>
                 </div>
               </a>

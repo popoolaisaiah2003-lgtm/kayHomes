@@ -1,6 +1,7 @@
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from flask import Flask
 from flask_mail import Mail
@@ -46,6 +47,30 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 mail = Mail(app)
+
+
+def format_naira(value):
+    if value is None:
+        return '₦0'
+
+    cleaned = value
+    if isinstance(value, str):
+        cleaned = value.replace('₦', '').replace(',', '').strip()
+        if cleaned == '':
+            return '₦0'
+
+    try:
+        amount = Decimal(str(cleaned))
+    except (InvalidOperation, ValueError, TypeError):
+        return str(value)
+
+    rounded = amount.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    return f"₦{int(rounded):,}"
+
+
+@app.template_filter('naira')
+def naira_filter(value):
+    return format_naira(value)
 
 
 def ensure_admin_schema_compatibility():

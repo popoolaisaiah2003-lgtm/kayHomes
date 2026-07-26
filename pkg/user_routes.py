@@ -3,7 +3,7 @@ import cloudinary.uploader
 from flask import render_template, request, redirect, url_for, session, flash, abort, jsonify
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from pkg import app, ensure_category_schema_compatibility, mail
+from pkg import app, ensure_category_schema_compatibility, format_naira, mail
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
 from pkg.models import Category, ContactMessage, Favorite, PasswordResetToken, db, User, Property
 import os, secrets
@@ -402,10 +402,7 @@ def _format_plain_price(value):
 
 
 def _format_currency_price(value):
-    try:
-        return f"₦{float(value):,.0f}"
-    except (TypeError, ValueError):
-        return str(value or '')
+    return format_naira(value)
 
 
 def _placeholder_property_image_url():
@@ -436,6 +433,7 @@ def _serialize_property_model(property_obj):
         'listing_type': property_obj.listing_type,
         'prop_desc': property_obj.prop_desc,
         'prop_price': _format_plain_price(property_obj.prop_price),
+        'prop_price_display': _format_currency_price(property_obj.prop_price),
         'prop_location': property_obj.prop_location,
         'prop_state': property_obj.prop_state,
         'prop_address': property_obj.prop_address,
@@ -596,6 +594,7 @@ def _build_property_detail_payload(property_id, current_user_id):
         'prop_id': property_data['prop_id'],
         'prop_title': property_data['prop_title'],
         'prop_price': _format_plain_price(property_data.get('prop_price')),
+        'prop_price_display': _format_currency_price(property_data.get('prop_price')),
         'prop_location': property_data.get('prop_location') or '',
         'prop_state': property_data.get('prop_state') or '',
         'prop_desc': property_data.get('prop_desc') or '',
@@ -899,37 +898,7 @@ def properties():
     except Exception:
         all_rentals_count = len(property_rows) if not selected_category_obj and not search_query else 0
 
-    properties = []
-
-    for row in property_rows:
-        prop = {
-            'prop_id': row.prop_id,
-            'prop_title': row.prop_title,
-            'prop_type': row.category.cat_name if getattr(row, 'category', None) else row.prop_type,
-            'listing_type': row.listing_type,
-            'prop_desc': row.prop_desc,
-            'prop_price': row.prop_price,
-            'prop_location': row.prop_location,
-            'prop_state': row.prop_state,
-            'prop_address': row.prop_address,
-        }
-
-        images = get_property_images(row.prop_id)
-        print(f"Property {row.prop_id} images: {images}")
-
-        if images:
-            first_image = images[0]
-
-            if 'image_url' in first_image:
-                prop['cover_image'] = first_image['image_url']
-            else:
-                prop['cover_image'] = _upload_image_url(first_image['image_path'])
-        else:
-            prop['cover_image'] = None
-
-        prop['short_desc'] = (row.prop_desc or '')[:160]
-
-        properties.append(prop)
+    properties = [_serialize_property_model(row) for row in property_rows]
 
     if not properties:
         if selected_category_obj and not search_query:
@@ -1886,12 +1855,14 @@ def my_favorites():
             'prop_type': row['prop_type'],
             'listing_type': row['listing_type'],
             'owner_name': f"{row['user_fname']} {row['user_lname']}",
-            'image': None
+            'image': None,
+            'image_url': None,
         })
 
     for favorite in favorites:
         favorite_images = get_property_images(favorite['prop_id'])
         favorite['image'] = favorite_images[0]['image_path'] if favorite_images else None
+        favorite['image_url'] = _upload_image_url(favorite['image']) if favorite['image'] else _placeholder_property_image_url()
 
     return render_template('my_favorites.html', title='My Favorites', favorites=favorites)
 

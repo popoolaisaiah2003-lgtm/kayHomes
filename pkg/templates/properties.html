@@ -83,8 +83,8 @@
             {% for prop in properties %}
               <div class="col-sm-12 col-md-6 col-lg-4" data-property-id="{{ prop['prop_id'] }}">
                 <div class="card h-100 border-0 property-card property-card-clickable" role="button" data-property-id="{{ prop['prop_id'] }}" data-detail-url="{{ url_for('property_detail', property_id=prop['prop_id']) }}">
-                  {% if prop.get('cover_image') %}
-                    <img src="{{ prop['cover_image'] }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
+                  {% if prop.get('cover_image_url') %}
+                    <img src="{{ prop['cover_image_url'] }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
                   {% else %}
                     <img src="{{ url_for('static', filename='images/img1.jpg') }}" class="card-img-top" alt="{{ prop['prop_title'] }}" style="height: 220px; object-fit: cover;">
                   {% endif %}
@@ -96,7 +96,7 @@
                     <p class="card-text text-muted mb-2">{{ prop['prop_location'] }}{% if prop.get('prop_state') %} - {{ prop['prop_state'] }}{% endif %}</p>
                     <p class="card-text mb-2"><strong>Type:</strong> {{ prop.get('prop_type') or 'Property' }}</p>
                     <p class="card-text mb-3">{{ prop.get('short_desc') or (prop.get('prop_desc')|striptags|truncate(120)) }}</p>
-                    <p class="card-text fw-bold text-primary mb-3">{{ prop['prop_price'] }}</p>
+                    <p class="card-text fw-bold text-primary mb-3">{{ prop['prop_price']|naira }}</p>
                     <a href="{{ url_for('property_detail', property_id=prop['prop_id']) }}" class="btn btn-add-property w-100 mt-auto" onclick="event.stopPropagation();">View Details</a>
                   </div>
                 </div>

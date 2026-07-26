@@ -31,7 +31,7 @@
               <aside class="property-sidebar">
                 <div class="property-info-card mb-3">
                   <h1 id="propertyDetailTitle" class="property-name-title">{{ property['prop_title'] }}</h1>
-                  <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price'] }}</h2>
+                  <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price']|naira }}</h2>
                   <p id="propertyDetailLocation" class="property-meta-item mb-3">
                     <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
                     <span>{{ property['prop_location'] }}, {{ property['prop_state'] }}</span>

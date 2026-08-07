@@ -78,6 +78,15 @@ class Property(db.Model):
     prop_state = db.Column(db.String(120), nullable=False)
     prop_lga = db.Column(db.String(120))
     prop_address = db.Column(db.String(255), nullable=False)
+    prop_bedroom = db.Column(db.Integer, nullable=True)
+    prop_bathroom = db.Column(db.Integer, nullable=True)
+    prop_toilet = db.Column(db.Integer, nullable=True)
+    prop_area = db.Column(db.Integer, nullable=True)
+    prop_area_unit = db.Column(db.String(20), nullable=True, default='sqm')
+    bedrooms = db.Column(db.Integer, nullable=True)
+    bathrooms = db.Column(db.Integer, nullable=True)
+    toilets = db.Column(db.Integer, nullable=True)
+    area_sqm = db.Column(db.Integer, nullable=True)
     prop_userid = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.cat_id', onupdate='CASCADE', ondelete='RESTRICT'))
 
@@ -104,3 +113,24 @@ class ContactMessage(db.Model):
     status = db.Column(db.String(20), nullable=False, default='Unread')
     created_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
     updated_at = db.Column(db.DateTime, nullable=False, default=db.func.now(), onupdate=db.func.now())
+
+
+class PropertyReview(db.Model):
+    __tablename__ = 'property_reviews'
+    __table_args__ = (
+        db.UniqueConstraint('property_id', 'reviewer_id', name='uq_user_property_review'),
+    )
+
+    review_id = db.Column(db.Integer, primary_key=True)
+    property_id = db.Column(db.Integer, db.ForeignKey('property.prop_id'), nullable=False, index=True)
+    reviewer_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False, index=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False, index=True)
+    rating = db.Column(db.Integer, nullable=False)
+    review_text = db.Column(db.Text, nullable=True)
+    review_tags = db.Column(db.String(255), nullable=True)
+    is_visible = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
+
+    property = relationship('Property', foreign_keys=[property_id])
+    reviewer = relationship('User', foreign_keys=[reviewer_id])
+    owner = relationship('User', foreign_keys=[owner_id])

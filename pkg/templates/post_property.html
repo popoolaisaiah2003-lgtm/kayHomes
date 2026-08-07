@@ -57,22 +57,46 @@
             <label class="form-label">Property State</label>
             <select id="prop_state" name="prop_state" class="form-select" required>
               <option value="">Select state</option>
-              <option value="Lagos" {% if property_data and property_data.prop_state == 'Lagos' %}selected{% endif %}>Lagos</option>
-              <option value="Abuja (FCT)" {% if property_data and property_data.prop_state == 'Abuja (FCT)' %}selected{% endif %}>Abuja (FCT)</option>
-              <option value="Ogun" {% if property_data and property_data.prop_state == 'Ogun' %}selected{% endif %}>Ogun</option>
-              <option value="Rivers" {% if property_data and property_data.prop_state == 'Rivers' %}selected{% endif %}>Rivers</option>
-              <option value="Anambra" {% if property_data and property_data.prop_state == 'Anambra' %}selected{% endif %}>Anambra</option>
-              <option value="Oyo" {% if property_data and property_data.prop_state == 'Oyo' %}selected{% endif %}>Oyo</option>
-              <option value="Kaduna" {% if property_data and property_data.prop_state == 'Kaduna' %}selected{% endif %}>Kaduna</option>
-              <option value="Kano" {% if property_data and property_data.prop_state == 'Kano' %}selected{% endif %}>Kano</option>
-              <option value="Enugu" {% if property_data and property_data.prop_state == 'Enugu' %}selected{% endif %}>Enugu</option>
-              <option value="Delta" {% if property_data and property_data.prop_state == 'Delta' %}selected{% endif %}>Delta</option>
+              {% for state in states %}
+                <option value="{{ state.state_name }}" {% if property_data and property_data.prop_state == state.state_name %}selected{% endif %}>{{ state.state_name }}</option>
+              {% endfor %}
             </select>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Local Government</label>
             <select id="prop_lga" name="prop_lga" class="form-select" data-selected-lga="{{ property_data.prop_lga if property_data and property_data.prop_lga else '' }}" required>
               <option value="">Select local government</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Bedrooms</label>
+            <input type="number" min="0" name="prop_bedroom" class="form-control" value="{{ property_data.prop_bedroom if property_data and property_data.prop_bedroom is not none else '' }}" placeholder="e.g. 3">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Bathrooms</label>
+            <input type="number" min="0" name="prop_bathroom" class="form-control" value="{{ property_data.prop_bathroom if property_data and property_data.prop_bathroom is not none else '' }}" placeholder="e.g. 2">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Toilets</label>
+            <input type="number" min="0" name="prop_toilet" class="form-control" value="{{ property_data.prop_toilet if property_data and property_data.prop_toilet is not none else '' }}" placeholder="e.g. 3">
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Property Area</label>
+            <input type="number" min="0" name="prop_area" class="form-control" value="{{ property_data.prop_area if property_data and property_data.prop_area is not none else '' }}" placeholder="e.g. 250">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Area Unit</label>
+            <select name="prop_area_unit" class="form-select">
+              <option value="sqm" {% if not property_data or property_data.prop_area_unit == 'sqm' %}selected{% endif %}>sqm (Square Meters)</option>
+              <option value="sqft" {% if property_data and property_data.prop_area_unit == 'sqft' %}selected{% endif %}>sqft (Square Feet)</option>
+              <option value="acres" {% if property_data and property_data.prop_area_unit == 'acres' %}selected{% endif %}>acres</option>
+              <option value="hectares" {% if property_data and property_data.prop_area_unit == 'hectares' %}selected{% endif %}>hectares</option>
             </select>
           </div>
         </div>
@@ -130,19 +154,7 @@
   </div>
 </div>
 <script>
-  // State -> Local Government mapping (sample)
-  const lgaMap = {
-    'Lagos': ['Ikeja','Eti-Osa','Surulere','Lagos Island','Ikorodu','Alimosho'],
-    'Abuja (FCT)': ['Abuja Municipal','Gwagwalada','Kwali','Kuje','Bwari'],
-    'Ogun': ['Abeokuta North','Abeokuta South','Ifo','Sagamu','Ijebu East'],
-    'Rivers': ['Port Harcourt','Obio-Akpor','Eleme','Okrika','Ikwerre'],
-    'Anambra': ['Awka South','Awka North','Onitsha North','Onitsha South','Nnewi North'],
-    'Oyo': ['Ibadan North','Ibadan South-West','Ogbomoso North','Oyo East','Iseyin'],
-    'Kaduna': ['Kaduna North','Kaduna South','Zaria','Kachia','Jema a'],
-    'Kano': ['Kano Municipal','Fagge','Gwale','Dala','Nassarawa'],
-    'Enugu': ['Enugu North','Enugu South','Enugu East','Awgu','Aninri'],
-    'Delta': ['Warri South','Warri North','Ethiope East','Sapele','Ughelli South']
-  };
+  const lgaMap = {{ state_lga_map|tojson }};
 
   const stateEl = document.getElementById('prop_state');
   const lgaEl = document.getElementById('prop_lga');

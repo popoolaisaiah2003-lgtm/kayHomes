@@ -147,8 +147,38 @@ def ensure_admin_schema_compatibility():
             app.logger.warning('Skipping admin schema compatibility due to database error: %s', exc)
 
 
+_CATEGORY_SCHEMA_ENSURED = False
+
+
+NIGERIAN_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
+    'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+    'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+    'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'Abuja (FCT)'
+]
+
+
+SEED_LGAS_BY_STATE = {
+    'Lagos': ['Ikeja', 'Eti-Osa', 'Surulere', 'Lagos Island', 'Ikorodu', 'Alimosho'],
+    'Abuja (FCT)': ['Abuja Municipal', 'Gwagwalada', 'Kwali', 'Kuje', 'Bwari'],
+    'Oyo': ['Ibadan North', 'Ibadan South-West', 'Ogbomoso North', 'Oyo East', 'Iseyin'],
+    'Ogun': ['Abeokuta North', 'Abeokuta South', 'Ifo', 'Sagamu', 'Ijebu East'],
+    'Rivers': ['Port Harcourt', 'Obio-Akpor', 'Eleme', 'Okrika', 'Ikwerre'],
+    'Anambra': ['Awka South', 'Awka North', 'Onitsha North', 'Onitsha South', 'Nnewi North'],
+    'Enugu': ['Enugu North', 'Enugu South', 'Enugu East', 'Awgu', 'Aninri'],
+    'Delta': ['Warri South', 'Warri North', 'Ethiope East', 'Sapele', 'Ughelli South'],
+    'Kaduna': ['Kaduna North', 'Kaduna South', 'Zaria', 'Kachia', 'Jemaa'],
+    'Kano': ['Kano Municipal', 'Fagge', 'Gwale', 'Dala', 'Nassarawa'],
+}
+
+
 def ensure_category_schema_compatibility():
     """Ensure categories are database-driven and linked to properties."""
+    global _CATEGORY_SCHEMA_ENSURED
+    if _CATEGORY_SCHEMA_ENSURED:
+        return
+
     with app.app_context():
         try:
             inspector = inspect(db.engine)
@@ -304,6 +334,8 @@ def ensure_category_schema_compatibility():
             db.session.rollback()
             app.logger.warning('Skipping category schema compatibility due to database error: %s', exc)
 
+    _CATEGORY_SCHEMA_ENSURED = True
+
 
 def ensure_user_theme_schema_compatibility():
     """Ensure users table has a theme column with safe default values."""
@@ -423,16 +455,226 @@ def ensure_runtime_tables_compatibility():
                     db.session.execute(text('ALTER TABLE favorites ADD COLUMN fav_propid INT NULL'))
                 db.session.commit()
 
-            if inspector.has_table('property_image'):
-                pimg_cols = {col['name'] for col in inspector.get_columns('property_image')}
-                if 'property_id' not in pimg_cols and 'pimg_propid' not in pimg_cols:
-                    db.session.execute(text('ALTER TABLE property_image ADD COLUMN pimg_propid INT NULL'))
-                if 'image_path' not in pimg_cols and 'pimg_url' not in pimg_cols:
-                    db.session.execute(text('ALTER TABLE property_image ADD COLUMN pimg_url VARCHAR(255) NULL'))
+            if inspector.has_table('property'):
+                prop_cols = {col['name'] for col in inspector.get_columns('property')}
+                required_cols = {
+                    'prop_bedroom': 'ALTER TABLE property ADD COLUMN prop_bedroom INT NULL',
+                    'prop_bathroom': 'ALTER TABLE property ADD COLUMN prop_bathroom INT NULL',
+                    'prop_toilet': 'ALTER TABLE property ADD COLUMN prop_toilet INT NULL',
+                    'prop_area': 'ALTER TABLE property ADD COLUMN prop_area INT NULL',
+                    'prop_area_unit': "ALTER TABLE property ADD COLUMN prop_area_unit VARCHAR(20) NULL DEFAULT 'sqm'",
+                    'bedrooms': 'ALTER TABLE property ADD COLUMN bedrooms INT NULL',
+                    'bathrooms': 'ALTER TABLE property ADD COLUMN bathrooms INT NULL',
+                    'toilets': 'ALTER TABLE property ADD COLUMN toilets INT NULL',
+                    'area_sqm': 'ALTER TABLE property ADD COLUMN area_sqm INT NULL',
+                }
+                for col_name, alter_stmt in required_cols.items():
+                    if col_name not in prop_cols:
+                        db.session.execute(text(alter_stmt))
                 db.session.commit()
+
+                db.session.execute(text('UPDATE property SET bedrooms = prop_bedroom WHERE bedrooms IS NULL AND prop_bedroom IS NOT NULL'))
+                db.session.execute(text('UPDATE property SET bathrooms = prop_bathroom WHERE bathrooms IS NULL AND prop_bathroom IS NOT NULL'))
+                db.session.execute(text('UPDATE property SET toilets = prop_toilet WHERE toilets IS NULL AND prop_toilet IS NOT NULL'))
+                db.session.execute(text('UPDATE property SET area_sqm = prop_area WHERE area_sqm IS NULL AND prop_area IS NOT NULL'))
+                db.session.commit()
+
+                prop_cols = {col['name'] for col in inspect(db.engine).get_columns('property')}
+
+                prop_indexes = {idx['name'] for idx in inspector.get_indexes('property')}
+                if 'idx_property_category_id' not in prop_indexes and 'category_id' in prop_cols:
+                    try:
+                        db.session.execute(text('CREATE INDEX idx_property_category_id ON property(category_id)'))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+                if 'idx_property_prop_state' not in prop_indexes and 'prop_state' in prop_cols:
+                    try:
+                        db.session.execute(text('CREATE INDEX idx_property_prop_state ON property(prop_state)'))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+            ensure_property_reviews_table()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             app.logger.warning('Skipping runtime tables compatibility due to database error: %s', exc)
+
+
+def ensure_property_reviews_table():
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            if not inspector.has_table('property_reviews'):
+                db.session.execute(text('''
+                    CREATE TABLE property_reviews (
+                        review_id INT AUTO_INCREMENT PRIMARY KEY,
+                        property_id INT NOT NULL,
+                        reviewer_id INT NOT NULL,
+                        owner_id INT NOT NULL,
+                        rating INT NOT NULL,
+                        review_text TEXT NULL,
+                        review_tags VARCHAR(255) NULL,
+                        is_visible TINYINT(1) DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_rev_property FOREIGN KEY (property_id) REFERENCES property(prop_id) ON DELETE CASCADE,
+                        CONSTRAINT fk_rev_reviewer FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        CONSTRAINT fk_rev_owner FOREIGN KEY (owner_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        UNIQUE KEY uq_user_property_review (property_id, reviewer_id),
+                        INDEX idx_rev_property_id (property_id),
+                        INDEX idx_rev_owner_id (owner_id),
+                        INDEX idx_rev_reviewer_id (reviewer_id),
+                        INDEX idx_rev_created_at (created_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                '''))
+                db.session.commit()
+
+            inspector = inspect(db.engine)
+            cols = {c['name'] for c in inspector.get_columns('property_reviews')}
+            required_cols = {
+                'property_id': 'ALTER TABLE property_reviews ADD COLUMN property_id INT NOT NULL',
+                'reviewer_id': 'ALTER TABLE property_reviews ADD COLUMN reviewer_id INT NOT NULL',
+                'owner_id': 'ALTER TABLE property_reviews ADD COLUMN owner_id INT NOT NULL',
+                'rating': 'ALTER TABLE property_reviews ADD COLUMN rating INT NOT NULL',
+                'review_text': 'ALTER TABLE property_reviews ADD COLUMN review_text TEXT NULL',
+                'review_tags': 'ALTER TABLE property_reviews ADD COLUMN review_tags VARCHAR(255) NULL',
+                'is_visible': 'ALTER TABLE property_reviews ADD COLUMN is_visible TINYINT(1) DEFAULT 1',
+                'created_at': 'ALTER TABLE property_reviews ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP',
+            }
+            for col_name, alter_sql in required_cols.items():
+                if col_name not in cols:
+                    db.session.execute(text(alter_sql))
+            db.session.commit()
+
+            index_rows = db.session.execute(text('SHOW INDEX FROM property_reviews')).mappings().all()
+            index_map = {}
+            for row in index_rows:
+                key_name = row.get('Key_name')
+                if key_name == 'PRIMARY':
+                    continue
+                seq = int(row.get('Seq_in_index') or 0)
+                col_name = row.get('Column_name')
+                non_unique_raw = row.get('Non_unique')
+                non_unique = int(non_unique_raw) if non_unique_raw is not None else 1
+                payload = index_map.setdefault(key_name, {'cols': [], 'non_unique': non_unique})
+                payload['cols'].append((seq, col_name))
+
+            normalized = {}
+            for key_name, payload in index_map.items():
+                ordered_cols = tuple(col for _, col in sorted(payload['cols'], key=lambda item: item[0]))
+                normalized[key_name] = {'cols': ordered_cols, 'non_unique': payload['non_unique']}
+
+            if 'uq_user_property_review' not in normalized:
+                try:
+                    db.session.execute(text('ALTER TABLE property_reviews ADD CONSTRAINT uq_user_property_review UNIQUE (property_id, reviewer_id)'))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+            required_indexes = {
+                'idx_rev_property_id': ('property_id',),
+                'idx_rev_owner_id': ('owner_id',),
+                'idx_rev_reviewer_id': ('reviewer_id',),
+                'idx_rev_created_at': ('created_at',),
+            }
+
+            index_rows = db.session.execute(text('SHOW INDEX FROM property_reviews')).mappings().all()
+            index_map = {}
+            for row in index_rows:
+                key_name = row.get('Key_name')
+                if key_name == 'PRIMARY':
+                    continue
+                seq = int(row.get('Seq_in_index') or 0)
+                col_name = row.get('Column_name')
+                non_unique_raw = row.get('Non_unique')
+                non_unique = int(non_unique_raw) if non_unique_raw is not None else 1
+                payload = index_map.setdefault(key_name, {'cols': [], 'non_unique': non_unique})
+                payload['cols'].append((seq, col_name))
+
+            normalized = {}
+            for key_name, payload in index_map.items():
+                ordered_cols = tuple(col for _, col in sorted(payload['cols'], key=lambda item: item[0]))
+                normalized[key_name] = {'cols': ordered_cols, 'non_unique': payload['non_unique']}
+
+            for required_name, required_cols in required_indexes.items():
+                if required_name in normalized:
+                    continue
+
+                try:
+                    db.session.execute(text(f'CREATE INDEX `{required_name}` ON property_reviews ({", ".join(required_cols)})'))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+        except (OperationalError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            app.logger.warning('ensure_property_reviews_table skipped or failed: %s', exc)
+
+
+def ensure_state_lga_seed_data():
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            if not inspector.has_table('state') or not inspector.has_table('lga'):
+                return
+
+            state_count = db.session.execute(text('SELECT COUNT(*) FROM state')).scalar() or 0
+            if int(state_count) == 0:
+                for state_name in NIGERIAN_STATES:
+                    db.session.execute(
+                        text('INSERT INTO state (state_name) VALUES (:state_name)'),
+                        {'state_name': state_name},
+                    )
+                db.session.commit()
+
+            state_rows = db.session.execute(text('SELECT state_id, state_name FROM state')).mappings().all()
+            state_id_map = {str(row['state_name']).strip(): int(row['state_id']) for row in state_rows}
+
+            lga_count = db.session.execute(text('SELECT COUNT(*) FROM lga')).scalar() or 0
+            if int(lga_count) == 0:
+                for state_name, lgas in SEED_LGAS_BY_STATE.items():
+                    state_id = state_id_map.get(state_name)
+                    if not state_id:
+                        continue
+                    for lga_name in lgas:
+                        db.session.execute(
+                            text('INSERT INTO lga (lga_name, lga_stateid) VALUES (:lga_name, :state_id)'),
+                            {'lga_name': lga_name, 'state_id': state_id},
+                        )
+                db.session.commit()
+
+            lga_indexes = {idx.get('name') for idx in inspector.get_indexes('lga')}
+            if 'lga_stateid_idx' not in lga_indexes:
+                try:
+                    db.session.execute(text('CREATE INDEX lga_stateid_idx ON lga(lga_stateid)'))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+
+            inspector = inspect(db.engine)
+            lga_fks = inspector.get_foreign_keys('lga')
+            has_state_fk = any(
+                fk.get('referred_table') == 'state'
+                and 'lga_stateid' in (fk.get('constrained_columns') or [])
+                and 'state_id' in (fk.get('referred_columns') or [])
+                for fk in lga_fks
+            )
+            if not has_state_fk:
+                try:
+                    db.session.execute(
+                        text(
+                            '''ALTER TABLE lga
+                               ADD CONSTRAINT lga_stateid
+                               FOREIGN KEY (lga_stateid) REFERENCES state(state_id)
+                               ON DELETE CASCADE ON UPDATE CASCADE'''
+                        )
+                    )
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+        except (OperationalError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            app.logger.warning('Skipping state/lga seed compatibility due to database error: %s', exc)
 
 
 def initialize_database():
@@ -444,6 +686,8 @@ def initialize_database():
             ensure_category_schema_compatibility()
             ensure_user_theme_schema_compatibility()
             ensure_runtime_tables_compatibility()
+            ensure_property_reviews_table()
+            ensure_state_lga_seed_data()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             app.logger.warning('Database initialization skipped: %s', exc)

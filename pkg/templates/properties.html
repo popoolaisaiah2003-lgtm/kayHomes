@@ -95,6 +95,14 @@
                     </div>
                     <p class="card-text text-muted mb-2">{{ prop['prop_location'] }}{% if prop.get('prop_state') %} - {{ prop['prop_state'] }}{% endif %}</p>
                     <p class="card-text mb-2"><strong>Type:</strong> {{ prop.get('prop_type') or 'Property' }}</p>
+                    {% if prop.get('bedrooms') != 'N/A' or prop.get('bathrooms') != 'N/A' or prop.get('toilets') != 'N/A' or prop.get('area') != 'N/A' %}
+                      <div class="d-flex flex-wrap gap-2 mb-2 small text-muted">
+                        {% if prop.get('bedrooms') and prop.bedrooms != 'N/A' %}<span><i class="bi bi-door-closed me-1"></i>{{ prop.bedrooms }} Bed</span>{% endif %}
+                        {% if prop.get('bathrooms') and prop.bathrooms != 'N/A' %}<span><i class="bi bi-droplet me-1"></i>{{ prop.bathrooms }} Bath</span>{% endif %}
+                        {% if prop.get('toilets') and prop.toilets != 'N/A' %}<span><i class="bi bi-water me-1"></i>{{ prop.toilets }} Toilet</span>{% endif %}
+                        {% if prop.get('area') and prop.area != 'N/A' %}<span><i class="bi bi-aspect-ratio me-1"></i>{{ prop.area }} {{ prop.get('area_unit', 'sqm') }}</span>{% endif %}
+                      </div>
+                    {% endif %}
                     <p class="card-text mb-3">{{ prop.get('short_desc') or (prop.get('prop_desc')|striptags|truncate(120)) }}</p>
                     <p class="card-text fw-bold text-primary mb-3">{{ prop['prop_price']|naira }}</p>
                     <a href="{{ url_for('property_detail', property_id=prop['prop_id']) }}" class="btn btn-add-property w-100 mt-auto" onclick="event.stopPropagation();">View Details</a>

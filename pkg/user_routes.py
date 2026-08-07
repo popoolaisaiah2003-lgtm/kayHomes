@@ -3,10 +3,10 @@ import cloudinary.uploader
 from flask import render_template, request, redirect, url_for, session, flash, abort, jsonify
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from pkg import app, ensure_category_schema_compatibility, format_naira, mail
+from pkg import app, ensure_category_schema_compatibility, ensure_property_reviews_table, ensure_state_lga_seed_data, format_naira, mail
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
-from pkg.models import Category, ContactMessage, Favorite, PasswordResetToken, db, User, Property
-import os, secrets
+from pkg.models import Category, ContactMessage, Favorite, PasswordResetToken, PropertyReview, db, User, Property
+import os, secrets, time
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func
 from sqlalchemy.orm import joinedload
@@ -17,6 +17,12 @@ from email_validator import EmailNotValidError, validate_email
 
 MAX_PROPERTY_IMAGES = 5
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
+
+
+_TABLE_COLUMNS_CACHE = {}
+_CONTACT_MESSAGE_TABLE_ENSURED = False
+_PROPERTY_IMAGE_TABLE_ENSURED = False
+_PROPERTY_IMAGE_COLUMNS_CACHE = None
 
 
 def get_current_user():
@@ -52,10 +58,8 @@ def get_current_theme():
 
 
 def _store_next_url():
-    next_url = request.full_path if request.query_string else request.path
-    if next_url.endswith('?'):
-        next_url = next_url[:-1]
-    session['next_url'] = next_url
+    if request.method == 'GET':
+        session['next_url'] = request.url
 
 
 def _redirect_after_auth(default_endpoint='home'):
@@ -66,42 +70,38 @@ def _redirect_after_auth(default_endpoint='home'):
 
 
 def _send_password_reset_email(user, token):
-    reset_link = url_for('reset_password', token=token, _external=True)
-    sender = app.config.get('MAIL_DEFAULT_SENDER') or 'noreply@kayhomes.local'
-
-    message = Message(
+    reset_url = url_for('reset_password', token=token, _external=True)
+    msg = Message(
         subject='KayHomes Password Reset Request',
         recipients=[user.user_email],
-        sender=sender,
-        body=(
-            f"Hello {user.user_fname},\n\n"
-            "We received a request to reset your KayHomes account password.\n\n"
-            "Use the link below to reset your password:\n"
-            f"{reset_link}\n\n"
-            "This link expires in 1 hour.\n\n"
-            "If you did not request this password reset, please ignore this email.\n"
-            "Your account will remain secure.\n\n"
-            "KayHomes Team"
-        )
+        body=f"Hello {user.user_fname},\n\nTo reset your password, visit the following link:\n{reset_url}\n\nIf you did not make this request, please ignore this email.\n"
     )
-    mail.send(message)
-    return reset_link
+    mail.send(msg)
 
 
 def get_table_columns(table_name):
+    if table_name in _TABLE_COLUMNS_CACHE:
+        return _TABLE_COLUMNS_CACHE[table_name]
     try:
         inspector = inspect(db.engine)
         if not inspector.has_table(table_name):
-            return set()
-        return {column['name'] for column in inspector.get_columns(table_name)}
+            cols = set()
+        else:
+            cols = {column['name'] for column in inspector.get_columns(table_name)}
+        _TABLE_COLUMNS_CACHE[table_name] = cols
+        return cols
     except Exception:
         return set()
 
 
 def ensure_contact_message_table():
+    global _CONTACT_MESSAGE_TABLE_ENSURED
+    if _CONTACT_MESSAGE_TABLE_ENSURED:
+        return
     try:
         inspector = inspect(db.engine)
         if inspector.has_table('contact_messages'):
+            _CONTACT_MESSAGE_TABLE_ENSURED = True
             return
 
         db.session.execute(text('''
@@ -118,11 +118,15 @@ def ensure_contact_message_table():
             )
         '''))
         db.session.commit()
+        _CONTACT_MESSAGE_TABLE_ENSURED = True
     except Exception:
         db.session.rollback()
 
 
 def ensure_property_image_table():
+    global _PROPERTY_IMAGE_TABLE_ENSURED
+    if _PROPERTY_IMAGE_TABLE_ENSURED:
+        return
     try:
         inspector = inspect(db.engine)
         if inspector.has_table('property_image'):
@@ -131,6 +135,7 @@ def ensure_property_image_table():
 
             property_ref_col = 'property_id' if 'property_id' in cols else ('pimg_propid' if 'pimg_propid' in cols else None)
             if not property_ref_col:
+                _PROPERTY_IMAGE_TABLE_ENSURED = True
                 return
 
             valid_fk = False
@@ -168,6 +173,7 @@ def ensure_property_image_table():
                 )
                 db.session.commit()
 
+            _PROPERTY_IMAGE_TABLE_ENSURED = True
             return
         db.session.execute(text('''
             CREATE TABLE IF NOT EXISTS property_image (
@@ -181,20 +187,53 @@ def ensure_property_image_table():
             )
         '''))
         db.session.commit()
+        _PROPERTY_IMAGE_TABLE_ENSURED = True
+    except Exception:
+        db.session.rollback()
+
+
+def ensure_property_specs_schema():
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table('property'):
+            return
+
+        columns = {col['name'] for col in inspector.get_columns('property')}
+        required = {
+            'bedrooms': 'ALTER TABLE property ADD COLUMN bedrooms INT NULL',
+            'bathrooms': 'ALTER TABLE property ADD COLUMN bathrooms INT NULL',
+            'toilets': 'ALTER TABLE property ADD COLUMN toilets INT NULL',
+            'area_sqm': 'ALTER TABLE property ADD COLUMN area_sqm INT NULL',
+        }
+
+        changed = False
+        for col_name, ddl in required.items():
+            if col_name not in columns:
+                db.session.execute(text(ddl))
+                changed = True
+
+        if changed:
+            db.session.commit()
+            _TABLE_COLUMNS_CACHE.pop('property', None)
     except Exception:
         db.session.rollback()
 
 
 def get_property_image_columns():
+    global _PROPERTY_IMAGE_COLUMNS_CACHE
+    if _PROPERTY_IMAGE_COLUMNS_CACHE is not None:
+        return _PROPERTY_IMAGE_COLUMNS_CACHE
+
     cols = get_table_columns('property_image')
     if not cols:
         return None
-    return {
+    _PROPERTY_IMAGE_COLUMNS_CACHE = {
         'id': 'image_id' if 'image_id' in cols else ('pimg_id' if 'pimg_id' in cols else None),
         'property_id': 'property_id' if 'property_id' in cols else ('pimg_propid' if 'pimg_propid' in cols else None),
         'path': 'image_path' if 'image_path' in cols else ('pimg_url' if 'pimg_url' in cols else None),
         'uploaded_at': 'uploaded_at' if 'uploaded_at' in cols else None,
     }
+    return _PROPERTY_IMAGE_COLUMNS_CACHE
 
 
 def is_allowed_image_extension(filename):
@@ -395,6 +434,57 @@ def _property_status_column():
     return None
 
 
+def _get_profile_stats(user_id):
+    total_properties = 0
+    try:
+        total_properties = Property.query.filter_by(prop_userid=user_id).count() or 0
+    except Exception:
+        total_properties = 0
+
+    status_column = _property_status_column()
+    property_columns = get_table_columns('property')
+
+    if status_column and status_column in property_columns and hasattr(Property, status_column):
+        try:
+            active_listings = (
+                Property.query
+                .filter(Property.prop_userid == user_id, getattr(Property, status_column) == 'Active')
+                .count()
+                or 0
+            )
+        except Exception:
+            active_listings = total_properties
+    else:
+        active_listings = total_properties
+
+    try:
+        favorites_count = Favorite.query.filter_by(fav_userid=user_id).count() or 0
+    except Exception:
+        favorites_count = 0
+
+    unread_messages = _get_unread_message_count(user_id)
+
+    views_count = None
+    for candidate in ('view_count', 'views', 'prop_views'):
+        if candidate in property_columns:
+            try:
+                views_count = db.session.execute(
+                    text(f'SELECT COALESCE(SUM({candidate}), 0) FROM property WHERE prop_userid = :uid'),
+                    {'uid': user_id}
+                ).scalar() or 0
+            except Exception:
+                views_count = 0
+            break
+
+    return {
+        'total_properties': total_properties,
+        'active_listings': active_listings,
+        'favorites_count': favorites_count,
+        'unread_messages': unread_messages,
+        'views_count': views_count,
+    }
+
+
 def _format_plain_price(value):
     if value is None:
         return ''
@@ -423,9 +513,21 @@ def _upload_image_url(image_name):
         filename=f"uploads/{image_name}"
     )
 
+
+def _format_property_room_value(value):
+    if value in (None, ''):
+        return 'N/A'
+    try:
+        numeric_value = int(float(value))
+        return str(numeric_value)
+    except (TypeError, ValueError):
+        return str(value)
+
+
 def _serialize_property_model(property_obj):
     image_rows = get_property_images(property_obj.prop_id)
     cover_image = image_rows[0]['image_path'] if image_rows else None
+    room_vals = _property_room_values(property_obj)
     return {
         'prop_id': property_obj.prop_id,
         'prop_title': property_obj.prop_title,
@@ -437,6 +539,17 @@ def _serialize_property_model(property_obj):
         'prop_location': property_obj.prop_location,
         'prop_state': property_obj.prop_state,
         'prop_address': property_obj.prop_address,
+        'prop_bedroom': room_vals['bedrooms'],
+        'prop_bathroom': room_vals['bathrooms'],
+        'prop_toilet': room_vals['toilets'],
+        'prop_area': room_vals['area'],
+        'area_sqm': room_vals['area'],
+        'prop_area_unit': room_vals['area_unit'],
+        'bedrooms': _format_property_room_value(room_vals['bedrooms']),
+        'bathrooms': _format_property_room_value(room_vals['bathrooms']),
+        'toilets': _format_property_room_value(room_vals['toilets']),
+        'area': _format_property_room_value(room_vals['area']),
+        'area_unit': room_vals['area_unit'],
         'short_desc': (property_obj.prop_desc or '')[:160],
         'cover_image': cover_image,
         'cover_image_url': _upload_image_url(cover_image),
@@ -463,11 +576,153 @@ def _get_inquiry_count_map(property_ids):
     return {row['inqu_propid']: int(row['total'] or 0) for row in rows if row.get('inqu_propid')}
 
 
+def _get_property_review_stats(property_id):
+    try:
+        row = db.session.execute(
+            text('''
+                SELECT 
+                    COUNT(*) AS total_count,
+                    COALESCE(AVG(rating), 0.0) AS avg_rating,
+                    COALESCE(SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END), 0) AS count_5,
+                    COALESCE(SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END), 0) AS count_4,
+                    COALESCE(SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END), 0) AS count_3,
+                    COALESCE(SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END), 0) AS count_2,
+                    COALESCE(SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END), 0) AS count_1
+                FROM property_reviews
+                WHERE property_id = :pid AND is_visible = 1
+            '''),
+            {'pid': property_id}
+        ).mappings().first()
+    except Exception:
+        row = None
+
+    if not row or not row.get('total_count'):
+        return {
+            'avg_rating': 0.0,
+            'avg_rating_display': '0.0',
+            'review_count': 0,
+            'star_counts': {5: 0, 4: 0, 3: 0, 2: 0, 1: 0},
+            'star_percentages': {5: 0, 4: 0, 3: 0, 2: 0, 1: 0},
+        }
+
+    total = int(row['total_count'] or 0)
+    avg_val = round(float(row['avg_rating'] or 0.0), 1)
+
+    star_counts = {
+        5: int(row['count_5'] or 0),
+        4: int(row['count_4'] or 0),
+        3: int(row['count_3'] or 0),
+        2: int(row['count_2'] or 0),
+        1: int(row['count_1'] or 0),
+    }
+
+    star_percentages = {
+        star: round((count / total * 100)) if total > 0 else 0
+        for star, count in star_counts.items()
+    }
+
+    return {
+        'avg_rating': avg_val,
+        'avg_rating_display': f"{avg_val:.1f}",
+        'review_count': total,
+        'star_counts': star_counts,
+        'star_percentages': star_percentages,
+    }
+
+
+def _get_owner_review_stats(owner_id):
+    try:
+        row = db.session.execute(
+            text('''
+                SELECT 
+                    COUNT(*) AS total_count,
+                    COALESCE(AVG(rating), 0.0) AS avg_rating
+                FROM property_reviews
+                WHERE owner_id = :oid AND is_visible = 1
+            '''),
+            {'oid': owner_id}
+        ).mappings().first()
+    except Exception:
+        row = None
+
+    if not row or not row.get('total_count'):
+        return {
+            'avg_rating': 0.0,
+            'avg_rating_display': '0.0',
+            'review_count': 0,
+        }
+
+    total = int(row['total_count'] or 0)
+    avg_val = round(float(row['avg_rating'] or 0.0), 1)
+
+    return {
+        'avg_rating': avg_val,
+        'avg_rating_display': f"{avg_val:.1f}",
+        'review_count': total,
+    }
+
+
+def _get_property_reviews(property_id, limit=None):
+    limit_clause = f" LIMIT {int(limit)}" if limit else ""
+    try:
+        query_str = f'''
+            SELECT 
+                r.review_id,
+                r.property_id,
+                r.reviewer_id,
+                r.owner_id,
+                r.rating,
+                r.review_text,
+                r.review_tags,
+                r.created_at,
+                u.user_fname,
+                u.user_lname
+            FROM property_reviews r
+            JOIN users u ON r.reviewer_id = u.user_id
+            WHERE r.property_id = :pid AND r.is_visible = 1
+            ORDER BY r.created_at DESC, r.review_id DESC
+            {limit_clause}
+        '''
+        rows = db.session.execute(text(query_str), {'pid': property_id}).mappings().all()
+    except Exception:
+        rows = []
+
+    reviews = []
+    for row in rows:
+        r_dict = dict(row)
+        tags_raw = r_dict.get('review_tags') or ''
+        tags_list = [t.strip() for t in tags_raw.split(',') if t.strip()] if tags_raw else []
+
+        created_at = r_dict.get('created_at')
+        if hasattr(created_at, 'strftime'):
+            date_str = created_at.strftime('%b %d, %Y')
+        else:
+            date_str = str(created_at)
+
+        fname = r_dict.get('user_fname') or 'User'
+        lname = r_dict.get('user_lname') or ''
+        reviewer_name = f"{fname} {lname}".strip()
+        initial = fname[0].upper() if fname else 'U'
+
+        reviews.append({
+            'review_id': r_dict['review_id'],
+            'rating': r_dict['rating'],
+            'review_text': r_dict.get('review_text') or '',
+            'tags': tags_list,
+            'date_display': date_str,
+            'reviewer_name': reviewer_name,
+            'reviewer_initial': initial,
+        })
+
+    return reviews
+
+
 def _serialize_listing_row(row, inquiry_count=0):
     listing_id = row['prop_id']
     image_rows = get_property_images(listing_id)
     cover_image = image_rows[0]['image_path'] if image_rows else None
     created_at = row.get('prop_regdate')
+    room_vals = _property_room_values(row)
     return {
         'prop_id': listing_id,
         'prop_title': row['prop_title'],
@@ -480,6 +735,17 @@ def _serialize_listing_row(row, inquiry_count=0):
         'prop_desc': row['prop_desc'],
         'prop_state': row['prop_state'],
         'prop_address': row['prop_address'],
+        'prop_bedroom': room_vals['bedrooms'],
+        'prop_bathroom': room_vals['bathrooms'],
+        'prop_toilet': room_vals['toilets'],
+        'prop_area': room_vals['area'],
+        'area_sqm': room_vals['area'],
+        'prop_area_unit': room_vals['area_unit'],
+        'bedrooms': _format_property_room_value(room_vals['bedrooms']),
+        'bathrooms': _format_property_room_value(room_vals['bathrooms']),
+        'toilets': _format_property_room_value(room_vals['toilets']),
+        'area': _format_property_room_value(room_vals['area']),
+        'area_unit': room_vals['area_unit'],
         'image': cover_image,
         'image_url': _upload_image_url(cover_image),
         'created_at': created_at.strftime('%b %d, %Y') if hasattr(created_at, 'strftime') else 'Recently posted',
@@ -491,186 +757,114 @@ def _serialize_listing_row(row, inquiry_count=0):
 
 
 def _build_my_listings_payload(user_id):
+    columns = get_table_columns('property')
+    select_cols = [
+        'prop_id',
+        'prop_title',
+        'prop_price',
+        'prop_location',
+        'prop_type',
+        'listing_type',
+        'prop_userid',
+        'prop_desc',
+        'prop_state',
+        'prop_address',
+    ]
+
+    for col in ('prop_regdate', 'prop_bedroom', 'prop_bathroom', 'prop_toilet', 'prop_area', 'prop_area_unit', 'bedrooms', 'bathrooms', 'toilets', 'area_sqm'):
+        if col in columns:
+            select_cols.append(col)
+
+    query = text(f'''
+        SELECT {', '.join(select_cols)}
+        FROM property
+        WHERE prop_userid = :uid
+        ORDER BY prop_id DESC
+    ''')
+
     try:
-        rows = db.session.execute(
-            text(
-                '''
-                SELECT p.*
-                FROM property p
-                WHERE p.prop_userid = :uid
-                ORDER BY p.prop_id DESC
-                '''
-            ),
-            {'uid': user_id}
-        ).mappings().all()
+        rows = db.session.execute(query, {'uid': user_id}).mappings().all()
     except Exception:
         rows = []
 
-    inquiry_map = _get_inquiry_count_map([row['prop_id'] for row in rows])
-    return [
-        _serialize_listing_row(row, inquiry_count=inquiry_map.get(row['prop_id'], 0))
-        for row in rows
-    ]
+    property_ids = [row['prop_id'] for row in rows]
+    inquiry_map = _get_inquiry_count_map(property_ids)
 
-
-def _get_profile_stats(user_id):
-    total_properties = Property.query.filter_by(prop_userid=user_id).count() or 0
-
-    status_column = _property_status_column()
-    if status_column and hasattr(Property, status_column):
-        active_listings = (
-            Property.query
-            .filter(Property.prop_userid == user_id, getattr(Property, status_column) == 'Active')
-            .count()
-            or 0
-        )
-    else:
-        active_listings = total_properties
-
-    try:
-        favorites_count = Favorite.query.filter_by(fav_userid=user_id).count() or 0
-    except Exception:
-        favorites_count = 0
-
-    property_columns = get_table_columns('property')
-    views_count = None
-    for candidate in ('view_count', 'views', 'prop_views'):
-        if candidate in property_columns:
-            try:
-                views_count = db.session.execute(
-                    text(f'SELECT COALESCE(SUM({candidate}), 0) FROM property WHERE prop_userid = :uid'),
-                    {'uid': user_id}
-                ).scalar() or 0
-            except Exception:
-                views_count = 0
-            break
-
-    return {
-        'total_properties': total_properties,
-        'active_listings': active_listings,
-        'favorites_count': favorites_count,
-        'unread_messages': _get_unread_message_count(user_id),
-        'views_count': views_count,
-    }
-
-
-def _build_property_detail_payload(property_id, current_user_id):
-    try:
-        result = db.session.execute(
-            text(
-                '''
-                SELECT p.*, u.user_id AS owner_id, u.user_fname, u.user_lname, u.user_email, u.user_phone
-                FROM property p
-                JOIN users u ON p.prop_userid = u.user_id
-                WHERE p.prop_id = :pid
-                '''
-            ),
-            {'pid': property_id}
-        ).mappings().first()
-    except Exception:
-        result = None
-
-    if not result:
-        return None
-
-    property_data = dict(result)
-    image_rows = get_property_images(property_id)
-    image_paths = [row['image_path'] for row in image_rows if row.get('image_path')]
-    cover_image = image_paths[0] if image_paths else None
-    gallery_images = image_paths[1:] if len(image_paths) > 1 else []
-
-    is_favorite = False
-    if current_user_id:
-        try:
-            favorite_check = db.session.execute(
-                text('SELECT 1 FROM favorites WHERE fav_userid = :uid AND fav_propid = :pid LIMIT 1'),
-                {'uid': current_user_id, 'pid': property_id}
-            ).scalar()
-            is_favorite = bool(favorite_check)
-        except Exception:
-            is_favorite = False
-
-    return {
-        'prop_id': property_data['prop_id'],
-        'prop_title': property_data['prop_title'],
-        'prop_price': _format_plain_price(property_data.get('prop_price')),
-        'prop_price_display': _format_currency_price(property_data.get('prop_price')),
-        'prop_location': property_data.get('prop_location') or '',
-        'prop_state': property_data.get('prop_state') or '',
-        'prop_desc': property_data.get('prop_desc') or '',
-        'prop_address': property_data.get('prop_address') or '',
-        'cover_image': cover_image,
-        'cover_image_url': _upload_image_url(cover_image),
-        'gallery_images': [
-            {
-                'image_path': image_name,
-                'image_url': _upload_image_url(image_name),
-            }
-            for image_name in gallery_images
-        ],
-        'images': [
-            {
-                'image_path': image_name,
-                'image_url': _upload_image_url(image_name),
-            }
-            for image_name in image_paths
-        ],
-        'owner': {
-            'user_id': property_data['owner_id'],
-            'user_fname': property_data['user_fname'],
-            'user_lname': property_data['user_lname'],
-            'user_email': property_data['user_email'],
-            'user_phone': property_data['user_phone'],
-        },
-        'is_favorite': is_favorite,
-    }
-
-
-def _text_or_empty(value):
-    return (value or '').strip()
-
-
-def _normalize_lookup(value):
-    return _text_or_empty(value).lower()
+    return [_serialize_listing_row(row, inquiry_count=inquiry_map.get(row['prop_id'], 0)) for row in rows]
 
 
 def _property_room_values(property_row):
-    columns = get_table_columns('property')
-    if not columns:
-        return {'bedrooms': None, 'bathrooms': None}
-
-    bedroom_candidates = ('prop_bedrooms', 'prop_bedroom', 'bedrooms', 'bedroom', 'prop_beds', 'beds', 'prop_bed')
-    bathroom_candidates = ('prop_bathrooms', 'prop_bathroom', 'bathrooms', 'bathroom', 'prop_baths', 'baths', 'prop_bath')
+    bedroom_candidates = ('bedrooms', 'prop_bedroom', 'prop_bedrooms', 'bedroom', 'prop_beds', 'beds', 'prop_bed')
+    bathroom_candidates = ('bathrooms', 'prop_bathroom', 'prop_bathrooms', 'bathroom', 'prop_baths', 'baths', 'prop_bath')
+    toilet_candidates = ('toilets', 'prop_toilet', 'prop_toilets', 'toilet')
+    area_candidates = ('area_sqm', 'prop_area', 'area')
 
     def pick_value(candidates):
         for candidate in candidates:
-            if candidate in property_row and property_row.get(candidate) not in (None, ''):
-                return property_row.get(candidate)
+            if isinstance(property_row, dict):
+                if candidate in property_row and property_row.get(candidate) not in (None, ''):
+                    return property_row.get(candidate)
+            else:
+                if hasattr(property_row, candidate) and getattr(property_row, candidate) not in (None, ''):
+                    return getattr(property_row, candidate)
         return None
 
     bedrooms = pick_value(bedroom_candidates)
     bathrooms = pick_value(bathroom_candidates)
+    toilets = pick_value(toilet_candidates)
+    area = pick_value(area_candidates)
+
+    area_unit = None
+    if isinstance(property_row, dict):
+        area_unit = property_row.get('prop_area_unit') or 'sqm'
+    else:
+        area_unit = getattr(property_row, 'prop_area_unit', 'sqm') or 'sqm'
 
     return {
         'bedrooms': bedrooms,
         'bathrooms': bathrooms,
+        'toilets': toilets,
+        'area': area,
+        'area_unit': area_unit,
     }
 
 
-def _format_property_room_value(value):
-    if value in (None, ''):
-        return 'N/A'
+def get_bulk_cover_images(property_ids):
+    if not property_ids:
+        return {}
+
+    pimg_cols = get_property_image_columns()
+    fk_col = 'property_id' if 'property_id' in pimg_cols else 'pimg_propid'
+    path_col = 'image_path' if 'image_path' in pimg_cols else 'pimg_url'
+    id_col = 'image_id' if 'image_id' in pimg_cols else 'pimg_id'
+
     try:
-        numeric_value = int(float(value))
-        return str(numeric_value)
-    except (TypeError, ValueError):
-        return str(value)
+        rows = db.session.execute(
+            text(f'''
+                SELECT {fk_col} AS pid, {path_col} AS img_path
+                FROM property_image
+                WHERE {fk_col} IN :pids
+                ORDER BY {id_col} ASC
+            ''').bindparams(pids=tuple(property_ids), expanding=True)
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    cover_map = {}
+    for row in rows:
+        pid = row['pid']
+        if pid not in cover_map:
+            cover_map[pid] = row['img_path']
+
+    return cover_map
 
 
-def _serialize_similar_property(property_row):
+def _serialize_similar_property(property_row, cover_image=None):
     property_id = property_row.get('prop_id')
-    image_rows = get_property_images(property_id)
-    cover_image = image_rows[0]['image_path'] if image_rows else None
+    if cover_image is None and property_id:
+        image_rows = get_property_images(property_id)
+        cover_image = image_rows[0]['image_path'] if image_rows else None
+
     room_values = _property_room_values(property_row)
 
     return {
@@ -683,68 +877,125 @@ def _serialize_similar_property(property_row):
         'detail_url': url_for('property_detail', property_id=property_id),
         'bedrooms': _format_property_room_value(room_values['bedrooms']),
         'bathrooms': _format_property_room_value(room_values['bathrooms']),
+        'toilets': _format_property_room_value(room_values['toilets']),
+        'area': _format_property_room_value(room_values['area']),
+        'area_unit': room_values['area_unit'],
     }
 
 
-def _build_similar_properties(property_data, limit=3):
-    property_columns = get_table_columns('property')
-    status_column = _property_status_column()
-    current_property_id = property_data.get('prop_id')
+def _text_or_empty(value):
+    if value is None:
+        return ''
+    return str(value).strip()
 
-    query_text = 'SELECT * FROM property WHERE prop_id != :pid'
-    params = {'pid': current_property_id}
 
-    if status_column and status_column in property_columns:
-        query_text += f" AND LOWER(COALESCE({status_column}, '')) = 'active'"
+def _normalize_lookup(value):
+    return _text_or_empty(value).lower()
+
+
+def _get_state_lga_form_data():
+    states = []
+    state_lga_map = {}
 
     try:
-        candidate_rows = db.session.execute(text(query_text), params).mappings().all()
+        state_rows = db.session.execute(
+            text('SELECT state_id, state_name FROM state ORDER BY state_name ASC')
+        ).mappings().all()
+        states = [dict(row) for row in state_rows]
     except Exception:
-        candidate_rows = []
+        states = []
+
+    try:
+        lga_rows = db.session.execute(
+            text(
+                '''SELECT s.state_name, l.lga_name
+                   FROM lga l
+                   JOIN state s ON s.state_id = l.lga_stateid
+                   ORDER BY s.state_name ASC, l.lga_name ASC'''
+            )
+        ).mappings().all()
+        for row in lga_rows:
+            state_name = (row.get('state_name') or '').strip()
+            lga_name = (row.get('lga_name') or '').strip()
+            if not state_name or not lga_name:
+                continue
+            state_lga_map.setdefault(state_name, []).append(lga_name)
+    except Exception:
+        state_lga_map = {}
+
+    return states, state_lga_map
+
+
+def _build_similar_properties(property_data, limit=3):
+    current_property_id = property_data.get('prop_id')
+    if not current_property_id:
+        return []
+
+    property_columns = get_table_columns('property')
+    status_column = _property_status_column()
+    status_filter = f" AND LOWER(COALESCE({status_column}, '')) = 'active'" if status_column and status_column in property_columns else ""
 
     current_city = _normalize_lookup(property_data.get('prop_location'))
     current_state = _normalize_lookup(property_data.get('prop_state'))
     current_category_id = property_data.get('category_id')
     current_category_name = _normalize_lookup(property_data.get('prop_type'))
 
-    ranked_rows = []
-    for row in candidate_rows:
-        row_data = dict(row)
-        row_city = _normalize_lookup(row_data.get('prop_location'))
-        row_state = _normalize_lookup(row_data.get('prop_state'))
-        row_category_id = row_data.get('category_id')
-        row_category_name = _normalize_lookup(row_data.get('prop_type'))
+    select_fields = ['prop_id', 'prop_title', 'prop_price', 'prop_location', 'prop_state', 'prop_type']
+    if 'category_id' in property_columns:
+        select_fields.append('category_id')
 
-        priority = None
-        if current_city and row_city and row_city == current_city:
-            priority = 0
-        elif current_state and row_state and row_state == current_state:
-            priority = 1
-        elif (
-            current_category_id is not None and row_category_id == current_category_id
-        ) or (
-            current_category_name and row_category_name and row_category_name == current_category_name
-        ):
-            priority = 2
+    room_cols = ['prop_bedroom', 'prop_bedrooms', 'bedroom', 'bedrooms', 'prop_bathroom', 'prop_bathrooms', 'bathroom', 'bathrooms', 'prop_toilet', 'toilets', 'prop_area', 'prop_area_unit']
+    for col in room_cols:
+        if col in property_columns and col not in select_fields:
+            select_fields.append(col)
 
-        if priority is None:
-            continue
+    fields_str = ', '.join(select_fields)
 
-        ranked_rows.append((priority, row_data))
+    query_text = f'''
+        SELECT {fields_str}
+        FROM property
+        WHERE prop_id != :pid
+        {status_filter}
+        AND (
+            (LOWER(TRIM(prop_location)) = :city AND :city != '')
+            OR (LOWER(TRIM(prop_state)) = :state AND :state != '')
+            OR (category_id = :cat_id AND :cat_id IS NOT NULL)
+            OR (LOWER(TRIM(prop_type)) = :cat_name AND :cat_name != '')
+        )
+        ORDER BY
+            CASE
+                WHEN LOWER(TRIM(prop_location)) = :city AND :city != '' THEN 0
+                WHEN LOWER(TRIM(prop_state)) = :state AND :state != '' THEN 1
+                ELSE 2
+            END ASC,
+            prop_id DESC
+        LIMIT :limit
+    '''
 
-    ranked_rows.sort(key=lambda item: (item[0], -int(item[1].get('prop_id') or 0)))
+    params = {
+        'pid': current_property_id,
+        'city': current_city,
+        'state': current_state,
+        'cat_id': current_category_id,
+        'cat_name': current_category_name,
+        'limit': limit,
+    }
 
-    similar_properties = []
-    seen_ids = set()
-    for _, row in ranked_rows:
-        prop_id = row.get('prop_id')
-        if prop_id in seen_ids:
-            continue
-        seen_ids.add(prop_id)
-        similar_properties.append(_serialize_similar_property(row))
-        if len(similar_properties) >= limit:
-            break
+    try:
+        candidate_rows = db.session.execute(text(query_text), params).mappings().all()
+    except Exception:
+        candidate_rows = []
 
+    if not candidate_rows:
+        return []
+
+    pids = [row['prop_id'] for row in candidate_rows]
+    cover_map = get_bulk_cover_images(pids)
+
+    similar_properties = [
+        _serialize_similar_property(dict(row), cover_image=cover_map.get(row['prop_id']))
+        for row in candidate_rows
+    ]
     return similar_properties
 
 
@@ -1068,11 +1319,15 @@ def property_details():
 @login_required
 def post_property(property_id=None):
     ensure_category_schema_compatibility()
+    ensure_state_lga_seed_data()
+    ensure_property_specs_schema()
 
     try:
         categories = Category.query.order_by(Category.cat_name.asc()).all()
     except Exception:
         categories = []
+
+    states, state_lga_map = _get_state_lga_form_data()
 
     user_id = session.get('user_id')
     property_data = None
@@ -1128,6 +1383,20 @@ def post_property(property_id=None):
         prop_lga = request.form.get('prop_lga')
         prop_address = request.form.get('prop_address')
 
+        def _safe_int(val):
+            if val is None or str(val).strip() == '':
+                return None
+            try:
+                return int(float(str(val).strip()))
+            except (ValueError, TypeError):
+                return None
+
+        prop_bedroom = _safe_int(request.form.get('prop_bedroom') or request.form.get('bedrooms'))
+        prop_bathroom = _safe_int(request.form.get('prop_bathroom') or request.form.get('bathrooms'))
+        prop_toilet = _safe_int(request.form.get('prop_toilet') or request.form.get('toilets'))
+        prop_area = _safe_int(request.form.get('prop_area') or request.form.get('area_sqm'))
+        prop_area_unit = (request.form.get('prop_area_unit') or 'sqm').strip()
+
         if not (prop_title and category_id and listing_type and prop_desc and prop_price and prop_location and prop_state and prop_lga and prop_address):
             flash('Please fill all required fields', 'warning')
             return redirect(url_for('post_property', property_id=property_id) if property_id else url_for('post_property'))
@@ -1158,6 +1427,24 @@ def post_property(property_id=None):
                 property_obj.prop_address = prop_address
                 if hasattr(property_obj, 'prop_lga'):
                     property_obj.prop_lga = prop_lga
+                if hasattr(property_obj, 'prop_bedroom'):
+                    property_obj.prop_bedroom = prop_bedroom
+                if hasattr(property_obj, 'bedrooms'):
+                    property_obj.bedrooms = prop_bedroom
+                if hasattr(property_obj, 'prop_bathroom'):
+                    property_obj.prop_bathroom = prop_bathroom
+                if hasattr(property_obj, 'bathrooms'):
+                    property_obj.bathrooms = prop_bathroom
+                if hasattr(property_obj, 'prop_toilet'):
+                    property_obj.prop_toilet = prop_toilet
+                if hasattr(property_obj, 'toilets'):
+                    property_obj.toilets = prop_toilet
+                if hasattr(property_obj, 'prop_area'):
+                    property_obj.prop_area = prop_area
+                if hasattr(property_obj, 'area_sqm'):
+                    property_obj.area_sqm = prop_area
+                if hasattr(property_obj, 'prop_area_unit'):
+                    property_obj.prop_area_unit = prop_area_unit
 
                 db.session.commit()
                 saved_property_id = property_obj.prop_id
@@ -1175,6 +1462,25 @@ def post_property(property_id=None):
                     'prop_address': prop_address,
                     'prop_userid': user_id,
                 }
+
+                if hasattr(Property, 'prop_bedroom'):
+                    property_payload['prop_bedroom'] = prop_bedroom
+                if hasattr(Property, 'bedrooms'):
+                    property_payload['bedrooms'] = prop_bedroom
+                if hasattr(Property, 'prop_bathroom'):
+                    property_payload['prop_bathroom'] = prop_bathroom
+                if hasattr(Property, 'bathrooms'):
+                    property_payload['bathrooms'] = prop_bathroom
+                if hasattr(Property, 'prop_toilet'):
+                    property_payload['prop_toilet'] = prop_toilet
+                if hasattr(Property, 'toilets'):
+                    property_payload['toilets'] = prop_toilet
+                if hasattr(Property, 'prop_area'):
+                    property_payload['prop_area'] = prop_area
+                if hasattr(Property, 'area_sqm'):
+                    property_payload['area_sqm'] = prop_area
+                if hasattr(Property, 'prop_area_unit'):
+                    property_payload['prop_area_unit'] = prop_area_unit
                 if hasattr(Property, 'prop_lga'):
                     property_payload['prop_lga'] = prop_lga
 
@@ -1214,6 +1520,8 @@ def post_property(property_id=None):
         csrf_token=token,
         property_data=property_data,
         categories=categories,
+        states=states,
+        state_lga_map=state_lga_map,
         existing_images=existing_images,
         max_property_images=MAX_PROPERTY_IMAGES
     )
@@ -1222,7 +1530,12 @@ def post_property(property_id=None):
 @app.route('/property/<int:property_id>')
 @login_required
 def property_detail(property_id):
+    t_start = time.perf_counter()
+
+    t0 = time.perf_counter()
     ensure_property_image_table()
+    ensure_property_specs_schema()
+    ensure_property_reviews_table()
     current_user = session.get('user_id')
     try:
         stmt = text('''
@@ -1234,11 +1547,17 @@ def property_detail(property_id):
         result = db.session.execute(stmt, {'pid': property_id}).mappings().first()
     except Exception:
         result = None
+    t_property_query = (time.perf_counter() - t0) * 1000.0
 
     if not result:
         abort(404)
 
     property_data = dict(result)
+    room_values = _property_room_values(property_data)
+    property_data['bedrooms'] = room_values['bedrooms']
+    property_data['bathrooms'] = room_values['bathrooms']
+    property_data['toilets'] = room_values['toilets']
+    property_data['area_sqm'] = room_values['area']
     owner = {
         'user_id': property_data['owner_id'],
         'user_fname': property_data['user_fname'],
@@ -1271,8 +1590,32 @@ def property_detail(property_id):
     ] if len(images) > 1 else []
 
     similar_properties = _build_similar_properties(property_data, limit=3)
+    can_message = bool(current_user and current_user != owner['user_id'])
 
-    can_message = current_user and current_user != owner['user_id']
+    review_stats = _get_property_review_stats(property_id)
+    all_reviews = _get_property_reviews(property_id)
+    recent_reviews = all_reviews[:5]
+    total_reviews_count = len(all_reviews)
+    has_more_reviews = total_reviews_count > 5
+
+    user_has_reviewed = False
+    if current_user:
+        try:
+            rev_check = db.session.execute(
+                text('SELECT 1 FROM property_reviews WHERE property_id = :pid AND reviewer_id = :uid LIMIT 1'),
+                {'pid': property_id, 'uid': current_user}
+            ).scalar()
+            user_has_reviewed = bool(rev_check)
+        except Exception:
+            user_has_reviewed = False
+
+    can_review = bool(current_user and current_user != owner['user_id'] and not user_has_reviewed)
+    owner_review_stats = _get_owner_review_stats(owner['user_id'])
+
+    if 'csrf_token' not in session:
+        import secrets as _secrets
+        session['csrf_token'] = _secrets.token_hex(16)
+
     return render_template(
         'property-details.html',
         title=property_data.get('prop_title'),
@@ -1284,8 +1627,83 @@ def property_detail(property_id):
         gallery_images=gallery_images,
         similar_properties=similar_properties,
         can_message=can_message,
-        is_favorite=is_favorite
+        is_favorite=is_favorite,
+        review_stats=review_stats,
+        recent_reviews=recent_reviews,
+        all_reviews=all_reviews,
+        total_reviews_count=total_reviews_count,
+        has_more_reviews=has_more_reviews,
+        user_has_reviewed=user_has_reviewed,
+        can_review=can_review,
+        owner_review_stats=owner_review_stats,
+        csrf_token=session.get('csrf_token')
     )
+
+
+@app.route('/property/<int:property_id>/review', methods=['POST'])
+@login_required
+def post_property_review(property_id):
+    ensure_property_reviews_table()
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('You must be logged in to leave a review.', 'warning')
+        return redirect(url_for('login'))
+
+    token = session.pop('csrf_token', None)
+    form_token = request.form.get('csrf_token')
+    if not token or not form_token or token != form_token:
+        flash('Invalid CSRF token.', 'danger')
+        return redirect(url_for('property_detail', property_id=property_id))
+
+    property_obj = Property.query.get(property_id)
+    if not property_obj:
+        flash('Property not found.', 'danger')
+        return redirect(url_for('properties'))
+
+    if property_obj.prop_userid == user_id:
+        flash('Property owners cannot review their own property.', 'danger')
+        return redirect(url_for('property_detail', property_id=property_id))
+
+    existing_review = PropertyReview.query.filter_by(property_id=property_id, reviewer_id=user_id).first()
+    if existing_review:
+        flash('You have already submitted a review for this property.', 'warning')
+        return redirect(url_for('property_detail', property_id=property_id))
+
+    try:
+        rating = int(request.form.get('rating', 0))
+    except (ValueError, TypeError):
+        rating = 0
+
+    if rating < 1 or rating > 5:
+        flash('Please select a valid star rating (1-5).', 'warning')
+        return redirect(url_for('property_detail', property_id=property_id))
+
+    review_text = (request.form.get('review_text') or '').strip()
+
+    allowed_tags = {'Responsive', 'Accurate listing', 'Professional', 'On time', 'Good communication'}
+    selected_tags = request.form.getlist('review_tags')
+    valid_tags = [t for t in selected_tags if t in allowed_tags]
+    tags_string = ', '.join(valid_tags) if valid_tags else None
+
+    try:
+        new_review = PropertyReview(
+            property_id=property_id,
+            reviewer_id=user_id,
+            owner_id=property_obj.prop_userid,
+            rating=rating,
+            review_text=review_text if review_text else None,
+            review_tags=tags_string,
+            is_visible=True,
+        )
+        db.session.add(new_review)
+        db.session.commit()
+        flash('Thank you! Your review has been submitted successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Failed to save review for property %s by user %s', property_id, user_id)
+        flash('Failed to submit review. Please try again.', 'danger')
+
+    return redirect(url_for('property_detail', property_id=property_id))
 
 
 @app.route('/property-details/<int:property_id>')
@@ -1904,6 +2322,7 @@ def profile():
         return redirect(url_for('profile'))
 
     stats = _get_profile_stats(user.user_id)
+    owner_review_stats = _get_owner_review_stats(user.user_id)
 
     return render_template(
         'profile.html',
@@ -1914,6 +2333,7 @@ def profile():
         favorites_count=stats['favorites_count'],
         unread_messages=stats['unread_messages'],
         views_count=stats['views_count'],
+        owner_review_stats=owner_review_stats,
     )
 
 

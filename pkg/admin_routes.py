@@ -180,6 +180,16 @@ def _admin_dashboard_stats_payload():
 
 @app.context_processor
 def inject_admin_context():
+    path = request.path or ''
+    if not path.startswith('/admin'):
+        return {
+            'admin_csrf_token': '',
+            'current_admin': None,
+            'admin_display_name': '',
+            'admin_total_count': 0,
+            'admin_unread_messages_count': 0,
+        }
+
     admin_id = session.get('admin_id')
     current_admin = None
     if admin_id:

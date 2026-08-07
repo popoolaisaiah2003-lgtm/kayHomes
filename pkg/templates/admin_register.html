@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Create Admin Account' if mode == 'register' else 'Add Admin Account' }} - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="login-page-container">
+  <div class="container py-5">
+    <div class="row justify-content-center fade-up">
+      <div class="col-lg-7 col-xl-6">
+        <form method="POST" action="{{ url_for('admin_register') if mode == 'register' else url_for('admin_create_admin') }}" class="login-form">
+          <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+          <h2 class="mb-2">{{ 'Create Admin Account' if mode == 'register' else 'Add Admin Account' }}</h2>
+          <p class="text-muted mb-4">{{ 'Set up the first administrator for KayHomes.' if mode == 'register' else 'Create a new administrator from the admin management section.' }}</p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">First Name</label>
+              <input type="text" name="first_name" class="form-control" value="{{ form_data.first_name if form_data else '' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Last Name</label>
+              <input type="text" name="last_name" class="form-control" value="{{ form_data.last_name if form_data else '' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              <input type="text" name="username" class="form-control" value="{{ form_data.username if form_data else '' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" value="{{ form_data.email if form_data else '' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" class="form-control" value="{{ form_data.phone if form_data else '' }}">
+            </div>
+            <div class="col-md-6"></div>
+            <div class="col-md-6">
+              <label class="form-label">Password</label>
+              <input type="password" name="password" class="form-control" minlength="8" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Confirm Password</label>
+              <input type="password" name="confirm_password" class="form-control" minlength="8" required>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-4 gap-2 flex-wrap">
+            <a href="{{ url_for('admin_login') if mode == 'register' else url_for('admin_management') }}" class="btn btn-outline-secondary">Back</a>
+            <button type="submit" class="btn btn-primary">{{ 'Create Admin Account' if mode == 'register' else 'Create Admin Account' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

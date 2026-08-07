@@ -1,0 +1,83 @@
+<div class="container-fluid">
+  <div class="row">
+    <nav class="navbar navbar-expand-lg sticky-top">
+      <div class="container-fluid px-3 px-lg-4">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+          <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
+          <img src="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}" alt="KayHomes icon logo" class="brand-logo-icon">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center">
+            {% if session.get('admin_id') %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'admin_profile' %}active{% endif %}" href="{{ url_for('admin_profile') }}">Profile</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'admin_change_password' %}active{% endif %}" href="{{ url_for('admin_change_password') }}">Settings</a>
+              </li>
+              <li class="nav-item">
+                <form method="POST" action="{{ url_for('admin_logout') }}" class="d-inline ms-lg-3">
+                  <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                  <button type="submit" class="btn btn-primary btn-sm">Logout</button>
+                </form>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
+              </li>
+              {% if session.get('user_id') %}
+                {% set logged_in_user_first_name = session.get('user_name') or 'User' %}
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint in ['contact'] %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">Favorites</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
+                    <i class="bi bi-chat-left-text me-1"></i> Messages
+                    <span id="navMessagesBadge" class="badge bg-danger ms-1 {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
+                  </a>
+                </li>
+                <li class="nav-item dropdown ms-lg-2">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Hello, {{ logged_in_user_first_name }}
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
+                  </ul>
+                </li>
+              {% else %}
+                <li class="nav-item ms-lg-2">
+                  <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
+                </li>
+                <li class="nav-item">
+                  <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
+                </li>
+              {% endif %}
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </div>
+</div>

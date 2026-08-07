@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up" data-admin-stats-url="{{ url_for('admin_dashboard_stats_api') }}">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+      <h2 class="mb-1">Admin Dashboard</h2>
+      <p class="text-muted mb-0">Overview of platform activity, listings, and account metrics.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('admin_management') }}" class="btn btn-outline-secondary btn-sm">Admin Management</a>
+      <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-secondary btn-sm">Category Management</a>
+      <a href="{{ url_for('admin_contact_messages') }}" class="btn btn-outline-primary btn-sm">
+        📩 Messages <span id="adminUnreadMessagesBadge" class="badge bg-danger ms-1 {% if not unread_messages_count or unread_messages_count <= 0 %}d-none{% endif %}">{{ unread_messages_count or 0 }}</span>
+      </a>
+      <a href="{{ url_for('admin_profile') }}" class="btn btn-outline-secondary btn-sm">Admin Profile</a>
+      <a href="{{ url_for('admin_change_password') }}" class="btn btn-outline-secondary btn-sm">Change Password</a>
+      <a href="{{ url_for('properties') }}" class="btn btn-outline-primary btn-sm">View Listings</a>
+      <a href="{{ url_for('post_property') }}" class="btn btn-primary btn-sm">Add Property</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Total Properties</div>
+            <h4 id="adminTotalProperties" class="mb-0 stat-number">{{ total_properties }}</h4>
+          </div>
+          <i class="bi bi-building-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Active Listings</div>
+            <h4 id="adminActiveListings" class="mb-0 stat-number">{{ active_listings }}</h4>
+          </div>
+          <i class="bi bi-check2-circle"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-accent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Users</div>
+            <h4 id="adminUsersCount" class="mb-0 stat-number">{{ users_count }}</h4>
+          </div>
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-danger">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Favorites</div>
+            <h4 id="adminFavoritesCount" class="mb-0 stat-number">{{ favorites_count }}</h4>
+          </div>
+          <i class="bi bi-heart-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-primary">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Contact Messages</div>
+            <h4 id="adminContactMessagesCount" class="mb-0 stat-number">{{ contact_messages_count }}</h4>
+          </div>
+          <i class="bi bi-envelope-paper-fill"></i>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-success">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Administrators</div>
+            <h4 id="adminAdministratorsCount" class="mb-0 stat-number">{{ administrators_count }}</h4>
+          </div>
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+      </div>
+    </div>
+    {% if pending_approvals is not none %}
+    <div class="col-6 col-lg-3">
+      <div class="metric-card metric-accent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="small opacity-75">Pending Approvals</div>
+            <h4 id="adminPendingApprovals" class="mb-0 stat-number">{{ pending_approvals }}</h4>
+          </div>
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive admin-table-wrap">
+        <table class="table table-ui table-sticky table-striped table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Image</th>
+              <th>Property</th>
+              <th>State</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Date Posted</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if properties %}
+              {% for property in properties %}
+                <tr>
+                  <td>{{ property.prop_id }}</td>
+                  <td>
+                    <img src="{{ property.cover_image_url or url_for('static', filename='images/img1.jpg') }}" alt="{{ property.prop_title }}" class="rounded" style="width:72px; height:52px; object-fit:cover;">
+                  </td>
+                  <td>{{ property.prop_title }}</td>
+                  <td>{{ property.prop_state }}</td>
+                  <td>{{ property.category }}</td>
+                  <td>{{ property.prop_price|naira }}</td>
+                  <td>{{ property.status }}</td>
+                  <td>
+                    {% if property.date_posted %}
+                      {{ property.date_posted.strftime('%b %d, %Y') if property.date_posted.strftime is defined else property.date_posted }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td class="text-end table-actions">
+                    <a href="{{ url_for('admin_edit_property', property_id=property.prop_id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+                    <form method="POST" action="{{ url_for('admin_delete_property', property_id=property.prop_id) }}" class="d-inline" onsubmit="return confirm('Delete this property? This action cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">No properties available.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ current_theme|default('light') }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KayHomes is a leading property website in Nigeria with property listings for rent and lease.
+   KayHomes is a premier real estate and property platform providing modern housing solutions. We offer home seekers an easy way 
+   to find premium rental properties and modern apartments tailored specifically for luxury and everyday comfort.">
+  <meta name="keywords" content="KayHomes, KayHomes Nigeria, KayHomes Real Estate, KayHomes Property Listings,
+    KayHomes Rentals, KayHomes Apartments, KayHomes Houses, KayHomes Flats, KayHomes Short Lets,
+    KayHomes Real Estate Platform, KayHomes Modern Housing Solutions">
+  <meta name="author" content="Popoola Isaiah Oluwakayode">
+  <title>{% block title %}KayHomes{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='homes.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+</head>
+<body>
+
+  {% include 'header.html' %}
+
+  {% set endpoint_name = request.endpoint or '' %}
+  {% set no_back_button_endpoints = ['home', 'login', 'register', 'admin_login', 'admin_register', 'admin_dashboard'] %}
+  {% set fallback_endpoint = 'admin_dashboard' if endpoint_name.startswith('admin_') else 'home' %}
+  {% if endpoint_name not in no_back_button_endpoints %}
+    <div class="kh-content-container pt-3 pb-0">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+        onclick="return handleBackNavigation('{{ url_for(fallback_endpoint) }}');"
+        aria-label="Go back to previous page"
+      >
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>Back</span>
+      </button>
+    </div>
+  {% endif %}
+
+  <div class="kh-content-container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {% block main_content %}{% endblock %}
+
+  <script>
+    function handleBackNavigation(homeUrl) {
+      if (window.history.length > 1) {
+        window.history.back();
+        return false;
+      }
+
+      window.location.href = homeUrl;
+      return false;
+    }
+  </script>
+  <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='app-live.js') }}"></script>
+
+  {% set is_logged_in = session.get('user_id') %}
+  <div class="site-cta py-4">
+    <div class="kh-content-container d-flex flex-column flex-md-row {% if not is_logged_in %}justify-content-between{% else %}justify-content-center{% endif %} align-items-center gap-3">
+      <h5 class="mb-0 fw-semibold text-center text-md-start cta-heading">Looking for trusted property options or a reliable listing agent?</h5>
+      {% if not is_logged_in %}
+        <a href="{{ url_for('register') }}" class="btn btn-light px-4 py-2 fw-bold">Create User</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <footer class="site-footer py-5">
+    <div class="kh-content-container">
+      <div class="row g-4">
+          <div class="col-12 col-lg-4">
+            <a class="d-inline-block mb-3" href="{{ url_for('home') }}">
+              <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
+            </a>
+            <p class="mb-3">KayHomes helps renters and homeowners discover premium listings with trusted agents, transparent details, and a seamless discovery journey.</p>
+            <p class="small mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Lagos, Nigeria</p>
+            <p class="small mb-0"><i class="bi bi-telephone-fill me-2"></i>+2349010580281</p>
+            <p class="small mb-0"><i class="bi bi-envelope-fill me-2"></i>kaydevs.com@gmail.com</p>
+          </div>
+
+          <div class="col-6 col-lg-2">
+            <h6 class="fw-bold mb-3">Quick Links</h6>
+            <ul class="list-unstyled small mb-0 d-grid gap-2">
+              <li><a href="{{ url_for('home') }}">Home</a></li>
+              <li><a href="{{ url_for('about') }}">About Us</a></li>
+              {% if session.get('user_id') %}
+                <li><a href="{{ url_for('properties') }}">Properties</a></li>
+                <li><a href="{{ url_for('contact') }}">Contact</a></li>
+              {% endif %}
+            </ul>
+          </div>
+
+          <div class="col-6 col-lg-3">
+            <h6 class="fw-bold mb-3">Property Types</h6>
+            <ul class="list-unstyled small mb-0 d-grid gap-2">
+              <li><a href="#">Apartments</a></li>
+              <li><a href="#">Duplexes</a></li>
+              <li><a href="#">Commercial Spaces</a></li>
+              <li><a href="#">Short Lets</a></li>
+            </ul>
+          </div>
+
+          <div class="col-12 col-lg-3">
+            <h6 class="fw-bold mb-3">Follow Us</h6>
+            <div class="d-flex gap-2 mb-3">
+              <a href="#" class="social-pill" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+              <a href="#" class="social-pill" aria-label="X"><i class="bi bi-twitter-x"></i></a>
+              <a href="#" class="social-pill" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+              <a href="#" class="social-pill" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+            </div>
+            {% if session.get('user_id') %}
+              <a href="{{ url_for('post_property') }}" class="btn btn-primary btn-sm">List a Property</a>
+            {% else %}
+              <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Sign In to List</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <hr class="my-4">
+      <div class="text-center text-muted small">© 2026 KayHomes. All rights reserved.</div>
+    </footer>
+
+</body>
+</html>

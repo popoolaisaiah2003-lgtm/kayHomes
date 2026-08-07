@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="login-page-container">
+  <div class="container py-5">
+    <div class="row g-4 align-items-center fade-up">
+      <div class="col-lg-6 d-none d-lg-block">
+        <img src="{{ url_for('static', filename='images/img1.png') }}"
+          class="img-fluid rounded-4 w-100"
+          style="height: 620px; object-fit: cover;"
+          alt="Luxury property exterior">
+      </div>
+
+      <div class="col-lg-6">
+        <form action="{{ url_for('login') }}" method="POST" class="login-form">
+          <h2 class="mb-2">Welcome Back</h2>
+          <p class="text-muted mb-4">Sign in to manage your listings, favorites, and messages.</p>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              name="email"
+              placeholder="Enter your email"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Login</button>
+
+          <p class="text-center mt-3 mb-1">
+            Need an account? <a href="{{ url_for('register') }}">Register here</a>
+          </p>
+          <p class="text-center mb-1">
+            <a href="{{ url_for('forgot_password') }}">Forgot password?</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

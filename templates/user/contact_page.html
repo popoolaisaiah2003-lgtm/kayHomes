@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Contact Us</title>
+  </head>
+  <body>
+    <h1>Contact Us</h1>
+    <form method="post">
+      {{ contact.hidden_tag() }}
+      <div>
+        {{ contact.fullname.label }}<br>
+        {{ contact.fullname(size=40) }}
+        {% if contact.fullname.errors %}
+          <ul>
+            {% for error in contact.fullname.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      <div>
+        {{ contact.email.label }}<br>
+        {{ contact.email(size=40) }}
+        {% if contact.email.errors %}
+          <ul>
+            {% for error in contact.email.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      <div>
+        {{ contact.message.label }}<br>
+        {{ contact.message(cols=40, rows=5) }}
+        {% if contact.message.errors %}
+          <ul>
+            {% for error in contact.message.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      <div>
+        {{ contact.submit() }}
+      </div>
+    </form>
+  </body>
+</html>

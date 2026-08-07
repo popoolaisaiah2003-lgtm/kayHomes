@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>User Home</title>
+  </head>
+  <body>
+    <h1>Welcome to the User Home Page</h1>
+    <p>App config keys:</p>
+    <ul>
+      {% for key, value in items.items() %}
+      <li><strong>{{ key }}</strong>: {{ value }}</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>

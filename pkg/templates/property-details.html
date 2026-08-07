@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ property['prop_title'] if property.get('prop_title') else 'Property' }} - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="details-page fade-up" data-property-detail data-poll-url="{{ url_for('property_detail_api', property_id=property['prop_id']) }}" data-placeholder-image="{{ url_for('static', filename='images/img1.jpg') }}">
+    <div class="container my-5">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="d-flex flex-column gap-4">
+                {% if cover_image %}
+                <img id="mainPropertyImage" src="{{ cover_image_url }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
+                {% else %}
+                <img id="mainPropertyImage" src="{{ url_for('static', filename='images/img1.jpg') }}" alt="{{ property['prop_title'] }}" class="img-fluid w-100 mb-3 details-main-img">
+                {% endif %}
+
+                  <div class="row row-cols-3 row-cols-md-5 g-2 {% if not (cover_image or gallery_images) %}d-none{% endif %}" id="propertyGallery">
+                    {% if cover_image %}
+                      <div class="col">
+                        <img src="{{ cover_image_url }}" class="img-fluid rounded border gallery-thumb active-thumb border-primary" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Cover image" data-full="{{ cover_image_url }}">
+                      </div>
+                    {% endif %}
+                    {% for img in gallery_images %}
+                      <div class="col">
+                        <img src="{{ img.image_url }}" class="img-fluid rounded border gallery-thumb" style="height: 90px; width: 100%; object-fit: cover; cursor:pointer;" alt="Property image {{ loop.index + 1 }}" data-full="{{ img.image_url }}">
+                      </div>
+                    {% endfor %}
+                  </div>
+          {% if similar_properties %}
+            <section class="similar-properties-section">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div>
+                  <h4 class="mb-1">Similar Properties</h4>
+                  <p class="mb-0 text-muted small">Up to 3 active listings matched by city, state, and category.</p>
+                </div>
+              </div>
+
+              <div class="row row-cols-1 row-cols-lg-3 g-3">
+                {% for similar in similar_properties %}
+                  <div class="col">
+                    <article class="card h-100 border-0 property-card similar-property-card">
+                      <img src="{{ similar.cover_image_url }}" class="card-img-top" alt="{{ similar.prop_title }}" style="height: 190px; object-fit: cover;">
+                      <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                          <h5 class="card-title mb-0 similar-property-title">{{ similar.prop_title }}</h5>
+                        </div>
+
+                        <p class="similar-property-price mb-2">{{ similar.prop_price_display }}</p>
+                        <p class="similar-property-location mb-2">{{ similar.prop_location }}, {{ similar.prop_state }}</p>
+
+                        <div class="similar-property-specs mb-3">
+                          <span class="similar-property-spec">Bedrooms: {{ similar.bedrooms }}</span>
+                          <span class="similar-property-spec">Bathrooms: {{ similar.bathrooms }}</span>
+                        </div>
+
+                        <a href="{{ similar.detail_url }}" class="btn btn-add-property mt-auto">View Property</a>
+                      </div>
+                    </article>
+                  </div>
+                {% endfor %}
+              </div>
+            </section>
+          {% endif %}
+        </div>
+            </div>
+
+            <div class="col-lg-4">
+              <aside class="property-sidebar">
+                <div class="property-info-card mb-3">
+                  <h1 id="propertyDetailTitle" class="property-name-title">{{ property['prop_title'] }}</h1>
+                  <h2 id="propertyDetailPrice" class="property-price-tag">{{ property['prop_price']|naira }}</h2>
+                  <p id="propertyDetailLocation" class="property-meta-item mb-3">
+                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                    <span>{{ property['prop_location'] }}, {{ property['prop_state'] }}</span>
+                  </p>
+
+                  <div class="detail-section-card mb-3">
+                    <h6>Description</h6>
+                    <p id="propertyDetailDescription" class="mb-0 description-text">{{ property['prop_desc'] }}</p>
+                  </div>
+
+                  <div class="detail-section-card mb-3">
+                    <h6>Address</h6>
+                    <p id="propertyDetailAddress" class="mb-0">{{ property['prop_address'] }}</p>
+                  </div>
+
+                  <div class="details-action-buttons d-grid gap-2">
+                    {% if can_message %}
+                      <a href="{{ url_for('start_chat', property_id=property['prop_id']) }}" class="btn btn-primary">
+                        <i class="bi bi-chat-left-text me-2" aria-hidden="true"></i>Message Owner
+                      </a>
+                    {% else %}
+                      <div class="alert alert-info mb-0">
+                        This is your property listing
+                      </div>
+                    {% endif %}
+
+                    {% if session.get('user_id') %}
+                      <button
+                        id="favoriteToggle"
+                        type="button"
+                        class="btn {% if is_favorite %}btn-danger{% else %}btn-outline-danger{% endif %}"
+                        data-property-id="{{ property['prop_id'] }}"
+                        data-favorite-toggle-url="{{ url_for('favorite_toggle', property_id=property['prop_id']) }}"
+                      >
+                        {% if is_favorite %}❤️ Saved{% else %}🤍 Save{% endif %}
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="owner-card">
+                  <h5 class="mb-3">Owner Information</h5>
+                  <p class="mb-2"><strong>Name:</strong> {{ owner.user_fname }} {{ owner.user_lname }}</p>
+                  <p class="mb-2"><strong>Phone:</strong> {{ owner.user_phone }}</p>
+                  <p class="mb-0"><strong>Email:</strong> {{ owner.user_email }}</p>
+                </div>
+              </aside>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@
       <p class="text-muted mb-0">Stay updated on reviews, inquiries, favorites, and saved search activity.</p>
     </div>
     <form method="post" action="{{ url_for('mark_all_notifications_read') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="btn btn-outline-primary">
         <i class="bi bi-check2-all me-2"></i>Mark all as read
       </button>
@@ -33,6 +34,7 @@
                 {% endif %}
                 {% if not item.is_read %}
                   <form method="post" action="{{ url_for('mark_notification_read', notification_id=item.notification_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn btn-sm btn-primary">Mark read</button>
                   </form>
                 {% endif %}

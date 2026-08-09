@@ -40,6 +40,7 @@
                   <div class="mt-auto d-flex gap-2 flex-wrap">
                     <a href="{{ url_for('property_detail', property_id=property.prop_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i>View</a>
                     <form method="post" action="{{ url_for('remove_favorite', property_id=property.prop_id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                       <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-heartbreak me-1"></i>Remove</button>
                     </form>
                   </div>
@@ -59,6 +60,20 @@
         <a href="{{ url_for('properties') }}" class="btn btn-primary">Browse Properties</a>
       </div>
     </div>
+  {% endif %}
+
+  {% if pagination and pagination.pages > 1 %}
+    <nav class="mt-4" aria-label="Favorites pagination">
+      <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('my_favorites', page=pagination.prev_num) if pagination.has_prev else '#' }}">Previous</a>
+        </li>
+        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('my_favorites', page=pagination.next_num) if pagination.has_next else '#' }}">Next</a>
+        </li>
+      </ul>
+    </nav>
   {% endif %}
 </div>
 {% endblock %}

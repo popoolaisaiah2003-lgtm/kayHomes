@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}State and LGA - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+    <div>
+      <h2 class="mb-1">State and LGA</h2>
+      <p class="text-muted mb-0">Read-only reference for seeded states and local government areas.</p>
+    </div>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">Back to Dashboard</a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-0">
+          <div class="table-responsive admin-table-wrap">
+            <table class="table table-ui table-striped mb-0">
+              <thead class="table-light"><tr><th>State</th><th>LGA Count</th></tr></thead>
+              <tbody>
+                {% for state in states %}
+                  <tr><td>{{ state.state_name }}</td><td>{{ state.lga_count }}</td></tr>
+                {% else %}
+                  <tr><td colspan="2" class="text-center py-4 text-muted">No states found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body p-0">
+          <div class="table-responsive admin-table-wrap" style="max-height: 640px; overflow-y: auto;">
+            <table class="table table-ui table-striped mb-0">
+              <thead class="table-light"><tr><th>State</th><th>LGA</th></tr></thead>
+              <tbody>
+                {% for lga in lgas %}
+                  <tr><td>{{ lga.state_name }}</td><td>{{ lga.lga_name }}</td></tr>
+                {% else %}
+                  <tr><td colspan="2" class="text-center py-4 text-muted">No LGAs found.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

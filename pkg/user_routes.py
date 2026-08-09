@@ -14,6 +14,7 @@ from urllib.parse import quote_plus
 from sqlalchemy.orm import joinedload
 from datetime import datetime, timedelta
 from functools import wraps
+from types import SimpleNamespace
 from email_validator import EmailNotValidError, validate_email
 
 
@@ -72,6 +73,71 @@ def _redirect_after_auth(default_endpoint='home'):
     if next_url:
         return redirect(next_url)
     return redirect(url_for(default_endpoint))
+
+
+def _ensure_csrf_token():
+    token = session.get('csrf_token')
+    if not token:
+        token = secrets.token_hex(16)
+        session['csrf_token'] = token
+    return token
+
+
+def _submitted_csrf_token():
+    return (
+        request.form.get('csrf_token')
+        or request.headers.get('X-CSRF-Token')
+        or request.headers.get('X-CSRFToken')
+    )
+
+
+def _validate_csrf_request(default_endpoint='home', endpoint_values=None, expect_json=False):
+    expected = session.get('csrf_token')
+    submitted = _submitted_csrf_token()
+    if expected and submitted and secrets.compare_digest(str(expected), str(submitted)):
+        return None
+
+    if expect_json:
+        return jsonify({'error': 'Invalid CSRF token.'}), 400
+
+    flash('Invalid CSRF token.', 'danger')
+    return redirect(url_for(default_endpoint, **(endpoint_values or {})))
+
+
+def _coerce_page(value, default=1):
+    try:
+        page = int(value)
+    except (TypeError, ValueError):
+        return default
+    return page if page > 0 else default
+
+
+def _build_pagination(total, page, per_page):
+    total = int(total or 0)
+    page = max(int(page or 1), 1)
+    per_page = max(int(per_page or 1), 1)
+    pages = max((total + per_page - 1) // per_page, 1)
+    if page > pages:
+        page = pages
+    return SimpleNamespace(
+        total=total,
+        page=page,
+        per_page=per_page,
+        pages=pages,
+        has_prev=page > 1,
+        prev_num=page - 1,
+        has_next=page < pages,
+        next_num=page + 1,
+    )
+
+
+def _properties_page_params(filters, selected_category_id=None, page=None):
+    params = _properties_query_params(filters)
+    if selected_category_id is not None:
+        params['category_id'] = selected_category_id
+    if page is not None:
+        params['page'] = page
+    return params
 
 
 def _send_password_reset_email(user, token):
@@ -319,6 +385,14 @@ def generate_unique_upload_name(original_filename):
             return filename
 
 
+def _cloudinary_property_upload_ready():
+    return bool(
+        app.config.get('CLOUDINARY_CLOUD_NAME')
+        and app.config.get('CLOUDINARY_API_KEY')
+        and app.config.get('CLOUDINARY_API_SECRET')
+    )
+
+
 def save_property_images(property_id, image_files, existing_count=0):
     ensure_property_image_table()
     cols = get_property_image_columns()
@@ -347,18 +421,24 @@ def save_property_images(property_id, image_files, existing_count=0):
             return False, f'{file_item.filename} appears corrupted or is not a valid image file.'
 
     saved_files = []
+    use_cloudinary = _cloudinary_property_upload_ready()
 
     try:
         for file_item in valid_files:
 
-            upload_result = cloudinary.uploader.upload(
-                file_item,
-                folder="kayhomes/properties"
-            )
+            if use_cloudinary:
+                upload_result = cloudinary.uploader.upload(
+                    file_item,
+                    folder="kayhomes/properties"
+                )
+                stored_path = upload_result["secure_url"]
+            else:
+                stored_path = generate_unique_upload_name(file_item.filename)
+                destination = os.path.join(app.config['UPLOAD_FOLDER'], stored_path)
+                file_item.stream.seek(0)
+                file_item.save(destination)
 
-            image_url = upload_result["secure_url"]
-
-            saved_files.append(image_url)
+            saved_files.append(stored_path)
 
             if cols['uploaded_at']:
                 insert_stmt = text(f'''
@@ -375,7 +455,7 @@ def save_property_images(property_id, image_files, existing_count=0):
                 insert_stmt,
                 {
                     "pid": property_id,
-                    "img": image_url
+                    "img": stored_path
                 }
             )
 
@@ -387,17 +467,20 @@ def save_property_images(property_id, image_files, existing_count=0):
 
         db.session.rollback()
 
-        for image_url in saved_files:
-            try:
-                public_id = image_url.split("/upload/")[1]
-                public_id = public_id.split(".", 1)[0]
+        for saved_path in saved_files:
+            if use_cloudinary and str(saved_path).startswith(('http://', 'https://')):
+                try:
+                    public_id = saved_path.split("/upload/")[1]
+                    public_id = public_id.split(".", 1)[0]
 
-                if "/" in public_id:
-                    public_id = public_id.split("/", 1)[1]
+                    if "/" in public_id:
+                        public_id = public_id.split("/", 1)[1]
 
-                cloudinary.uploader.destroy(public_id)
-            except Exception:
-                pass
+                    cloudinary.uploader.destroy(public_id)
+                except Exception:
+                    pass
+            else:
+                delete_image_file(saved_path)
 
         return False, str(e)
         
@@ -1067,9 +1150,10 @@ def _format_property_room_value(value):
         return str(value)
 
 
-def _serialize_property_model(property_obj):
-    image_rows = get_property_images(property_obj.prop_id)
-    cover_image = image_rows[0]['image_path'] if image_rows else None
+def _serialize_property_model(property_obj, cover_image=None):
+    if cover_image is None:
+        image_rows = get_property_images(property_obj.prop_id)
+        cover_image = image_rows[0]['image_path'] if image_rows else None
     room_vals = _property_room_values(property_obj)
     status_meta = _property_status_presentation(getattr(property_obj, 'prop_status', None))
     return {
@@ -1266,10 +1350,11 @@ def _get_property_reviews(property_id, limit=None):
     return reviews
 
 
-def _serialize_listing_row(row, inquiry_count=0):
+def _serialize_listing_row(row, inquiry_count=0, cover_image=None):
     listing_id = row['prop_id']
-    image_rows = get_property_images(listing_id)
-    cover_image = image_rows[0]['image_path'] if image_rows else None
+    if cover_image is None:
+        image_rows = get_property_images(listing_id)
+        cover_image = image_rows[0]['image_path'] if image_rows else None
     created_at = row.get('prop_regdate')
     room_vals = _property_room_values(row)
     status_meta = _property_status_presentation(row.get('prop_status'))
@@ -1310,7 +1395,7 @@ def _serialize_listing_row(row, inquiry_count=0):
         'status_update_url': url_for('update_listing_status', property_id=listing_id),
     }
 
-def _build_my_listings_payload(user_id):
+def _build_my_listings_payload(user_id, page=None, per_page=None):
     columns = get_table_columns('property')
     select_cols = [
         'prop_id',
@@ -1336,22 +1421,178 @@ def _build_my_listings_payload(user_id):
         if col in columns:
             select_cols.append(col)
 
+    count_query = text('SELECT COUNT(*) FROM property WHERE prop_userid = :uid')
+
+    page = _coerce_page(page, default=1)
+    per_page = int(per_page or 12)
+    total = 0
+    try:
+        total = int(db.session.execute(count_query, {'uid': user_id}).scalar() or 0)
+    except Exception:
+        total = 0
+
+    pagination = _build_pagination(total, page, per_page)
+    offset = (pagination.page - 1) * pagination.per_page
+
     query = text(f'''
         SELECT {', '.join(select_cols)}
         FROM property
         WHERE prop_userid = :uid
         ORDER BY prop_id DESC
+        LIMIT :limit OFFSET :offset
     ''')
 
     try:
-        rows = db.session.execute(query, {'uid': user_id}).mappings().all()
+        rows = db.session.execute(query, {'uid': user_id, 'limit': pagination.per_page, 'offset': offset}).mappings().all()
     except Exception:
         rows = []
 
     property_ids = [row['prop_id'] for row in rows]
     inquiry_map = _get_inquiry_count_map(property_ids)
+    cover_map = get_bulk_cover_images(property_ids)
 
-    return [_serialize_listing_row(row, inquiry_count=inquiry_map.get(row['prop_id'], 0)) for row in rows]
+    return {
+        'listings': [
+            _serialize_listing_row(row, inquiry_count=inquiry_map.get(row['prop_id'], 0), cover_image=cover_map.get(row['prop_id']))
+            for row in rows
+        ],
+        'pagination': pagination,
+    }
+
+
+def _build_favorites_payload(user_id, page=None, per_page=None):
+    page = _coerce_page(page, default=1)
+    per_page = int(per_page or 12)
+
+    try:
+        total = int(
+            db.session.execute(
+                text('SELECT COUNT(*) FROM favorites WHERE fav_userid = :uid'),
+                {'uid': user_id}
+            ).scalar() or 0
+        )
+    except Exception:
+        total = 0
+
+    pagination = _build_pagination(total, page, per_page)
+    offset = (pagination.page - 1) * pagination.per_page
+
+    try:
+        rows = db.session.execute(
+            text(
+                '''
+                SELECT p.*, u.user_fname, u.user_lname
+                FROM favorites f
+                JOIN property p ON p.prop_id = f.fav_propid
+                JOIN users u ON u.user_id = p.prop_userid
+                WHERE f.fav_userid = :uid
+                ORDER BY f.fav_id DESC
+                LIMIT :limit OFFSET :offset
+                '''
+            ),
+            {'uid': user_id, 'limit': pagination.per_page, 'offset': offset}
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    property_ids = [row['prop_id'] for row in rows]
+    cover_map = get_bulk_cover_images(property_ids)
+    favorites = []
+    for row in rows:
+        cover_image = cover_map.get(row['prop_id'])
+        favorites.append({
+            'prop_id': row['prop_id'],
+            'prop_title': row['prop_title'],
+            'prop_price': row['prop_price'],
+            'prop_location': row['prop_location'],
+            'prop_type': row['prop_type'],
+            'listing_type': row['listing_type'],
+            'owner_name': f"{row['user_fname']} {row['user_lname']}",
+            'image': cover_image,
+            'image_url': _upload_image_url(cover_image),
+        })
+
+    return {
+        'favorites': favorites,
+        'pagination': pagination,
+    }
+
+
+def _build_property_detail_payload(property_id, current_user_id):
+    ensure_property_image_table()
+    ensure_property_specs_schema()
+
+    try:
+        row = db.session.execute(
+            text(
+                '''
+                SELECT p.*
+                FROM property p
+                WHERE p.prop_id = :pid
+                LIMIT 1
+                '''
+            ),
+            {'pid': property_id}
+        ).mappings().first()
+    except Exception:
+        row = None
+
+    if not row:
+        return None
+
+    property_data = dict(row)
+    room_values = _property_room_values(property_data)
+    property_data['bedrooms'] = room_values['bedrooms']
+    property_data['bathrooms'] = room_values['bathrooms']
+    property_data['toilets'] = room_values['toilets']
+    property_data['area_sqm'] = room_values['area']
+
+    image_rows = get_property_images(property_id)
+    image_paths = [image_row.get('image_path') for image_row in image_rows if image_row.get('image_path')]
+    cover_image = image_paths[0] if image_paths else None
+
+    is_favorite = False
+    if current_user_id:
+        try:
+            is_favorite = bool(
+                db.session.execute(
+                    text('SELECT 1 FROM favorites WHERE fav_userid = :uid AND fav_propid = :pid LIMIT 1'),
+                    {'uid': current_user_id, 'pid': property_id}
+                ).scalar()
+            )
+        except Exception:
+            is_favorite = False
+
+    return {
+        'prop_id': property_data.get('prop_id'),
+        'prop_title': property_data.get('prop_title'),
+        'prop_price': property_data.get('prop_price'),
+        'prop_price_display': _format_currency_price(property_data.get('prop_price')),
+        'prop_location': property_data.get('prop_location'),
+        'prop_state': property_data.get('prop_state'),
+        'prop_lga': property_data.get('prop_lga'),
+        'prop_address': property_data.get('prop_address'),
+        'prop_desc': property_data.get('prop_desc'),
+        'prop_type': property_data.get('prop_type'),
+        'listing_type': property_data.get('listing_type'),
+        'prop_status': _normalize_property_status(property_data.get('prop_status')),
+        'prop_views': int(property_data.get('prop_views') or 0),
+        'bedrooms': room_values['bedrooms'],
+        'bathrooms': room_values['bathrooms'],
+        'toilets': room_values['toilets'],
+        'area_sqm': room_values['area'],
+        'prop_area_unit': room_values['area_unit'],
+        'cover_image_url': _upload_image_url(cover_image),
+        'gallery_images': [
+            {
+                'image_path': image_path,
+                'image_url': _upload_image_url(image_path),
+            }
+            for image_path in image_paths[1:]
+        ],
+        'images': image_paths,
+        'is_favorite': is_favorite,
+    }
 
 
 def _property_room_values(property_row):
@@ -1770,6 +2011,8 @@ def inject_unread_count():
         'unread_count': unread_count,
         'notification_unread_count': notification_unread_count,
         'latest_notifications': latest_notifications,
+        'csrf_token': _ensure_csrf_token(),
+        '_properties_page_params': _properties_page_params,
         'current_theme': get_current_theme(),
         'is_authenticated_page': is_authenticated_page,
     }
@@ -1933,10 +2176,10 @@ def contact():
 
 @app.route('/properties')
 @app.route('/properties/')
-@login_required
 def properties():
     ensure_property_image_table()
     ensure_category_schema_compatibility()
+    page = _coerce_page(request.args.get('page', 1), default=1)
     selected_category_id = request.args.get('category_id', type=int)
     selected_category_name = (request.args.get('category') or '').strip()
     filters = _extract_property_filters(request.args)
@@ -1981,17 +2224,27 @@ def properties():
     try:
         base_query = Property.query.options(joinedload(Property.category))
         query = _apply_properties_filters(base_query, filters, selected_category_obj=selected_category_obj)
-        property_rows = query.all()
+        total_matches = query.count()
+        pagination = _build_pagination(total_matches, page, 12)
+        property_rows = (
+            query
+            .offset((pagination.page - 1) * pagination.per_page)
+            .limit(pagination.per_page)
+            .all()
+        )
     except Exception:
         property_rows = []
+        total_matches = 0
+        pagination = _build_pagination(0, page, 12)
 
     try:
         all_rentals_count = Property.query.count()
     except Exception:
         all_rentals_count = len(property_rows) if not selected_category_obj and not search_query else 0
 
-    properties = [_serialize_property_model(row) for row in property_rows]
-    result_count = len(properties)
+    cover_map = get_bulk_cover_images([row.prop_id for row in property_rows])
+    properties = [_serialize_property_model(row, cover_image=cover_map.get(row.prop_id)) for row in property_rows]
+    result_count = int(total_matches or 0)
 
     if not properties:
         if selected_category_obj and not search_query:
@@ -2029,6 +2282,7 @@ def properties():
         empty_message=empty_message,
         empty_subtext=empty_subtext,
         post_login_history_fix=post_login_history_fix,
+        pagination=pagination,
     )
 
 
@@ -2064,6 +2318,10 @@ def save_search():
     user = get_current_user()
     if not user:
         return redirect(url_for('login'))
+
+    csrf_error = _validate_csrf_request('properties', _properties_page_params(_extract_property_filters(request.form)))
+    if csrf_error:
+        return csrf_error
 
     search_name = (request.form.get('name') or '').strip()
     if not search_name:
@@ -2140,6 +2398,10 @@ def delete_saved_search(search_id):
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('saved_searches')
+    if csrf_error:
+        return csrf_error
+
     try:
         saved_search = SavedSearch.query.filter_by(search_id=search_id, user_id=user.user_id).first()
         if not saved_search:
@@ -2200,6 +2462,10 @@ def mark_notification_read(notification_id):
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('notifications')
+    if csrf_error:
+        return csrf_error
+
     try:
         item = Notification.query.filter_by(notification_id=notification_id, user_id=user.user_id).first()
         if not item:
@@ -2220,6 +2486,10 @@ def mark_all_notifications_read():
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('notifications')
+    if csrf_error:
+        return csrf_error
+
     try:
         (
             Notification.query
@@ -2236,7 +2506,6 @@ def mark_all_notifications_read():
 
 
 @app.route('/property-details/')
-@login_required
 def property_details():
     return redirect(url_for('properties'))
 
@@ -2276,11 +2545,9 @@ def post_property(property_id=None):
         existing_images = get_property_images(property_id)
 
     if request.method == 'POST':
-        token = session.pop('csrf_token', None)
-        form_token = request.form.get('csrf_token')
-        if not token or not form_token or token != form_token:
-            flash('Invalid CSRF token', 'danger')
-            return redirect(url_for('post_property', property_id=property_id) if property_id else url_for('post_property'))
+        csrf_error = _validate_csrf_request('post_property', {'property_id': property_id} if property_id else None)
+        if csrf_error:
+            return csrf_error
 
         prop_title = request.form.get('prop_title')
         category_id = request.form.get('category_id', type=int)
@@ -2445,13 +2712,10 @@ def post_property(property_id=None):
         flash('Property updated successfully' if property_data else 'Property posted successfully', 'success')
         return redirect(url_for('my_listings' if property_data else 'properties'))
 
-    import secrets as _secrets
-    token = _secrets.token_hex(16)
-    session['csrf_token'] = token
     return render_template(
         'post_property.html',
         title='Post Property' if not property_id else 'Edit Property',
-        csrf_token=token,
+        csrf_token=_ensure_csrf_token(),
         property_data=property_data,
         categories=categories,
         states=states,
@@ -2462,7 +2726,6 @@ def post_property(property_id=None):
 
 
 @app.route('/property/<int:property_id>')
-@login_required
 def property_detail(property_id):
     t_start = time.perf_counter()
 
@@ -2561,10 +2824,6 @@ def property_detail(property_id):
     owner_profile_stats = _get_profile_stats(owner['user_id'])
     owner['total_listings'] = owner_profile_stats.get('total_properties', 0)
 
-    if 'csrf_token' not in session:
-        import secrets as _secrets
-        session['csrf_token'] = _secrets.token_hex(16)
-
     return render_template(
         'property-details.html',
         title=property_data.get('prop_title'),
@@ -2585,7 +2844,7 @@ def property_detail(property_id):
         user_has_reviewed=user_has_reviewed,
         can_review=can_review,
         owner_review_stats=owner_review_stats,
-        csrf_token=session.get('csrf_token')
+        csrf_token=_ensure_csrf_token()
     )
 
 
@@ -2598,11 +2857,9 @@ def post_property_review(property_id):
         flash('You must be logged in to leave a review.', 'warning')
         return redirect(url_for('login'))
 
-    token = session.pop('csrf_token', None)
-    form_token = request.form.get('csrf_token')
-    if not token or not form_token or token != form_token:
-        flash('Invalid CSRF token.', 'danger')
-        return redirect(url_for('property_detail', property_id=property_id))
+    csrf_error = _validate_csrf_request('property_detail', {'property_id': property_id})
+    if csrf_error:
+        return csrf_error
 
     property_obj = Property.query.get(property_id)
     if not property_obj:
@@ -2663,7 +2920,6 @@ def post_property_review(property_id):
 
 
 @app.route('/property-details/<int:property_id>')
-@login_required
 def property_details_alias(property_id):
     return redirect(url_for('property_detail', property_id=property_id))
 
@@ -2672,6 +2928,9 @@ def property_details_alias(property_id):
 @login_required
 def favorite_toggle(property_id):
     user_id = session['user_id']
+    csrf_error = _validate_csrf_request('property_detail', {'property_id': property_id}, expect_json=True)
+    if csrf_error:
+        return csrf_error
     try:
         property_row = db.session.execute(
             text('SELECT prop_userid, prop_title FROM property WHERE prop_id = :pid LIMIT 1'),
@@ -2779,6 +3038,9 @@ def chat(property_id, user_id):
 
     if request.method == 'POST':
         message_text = request.form.get('message')
+        csrf_error = _validate_csrf_request('chat', {'property_id': property_id, 'user_id': user_id})
+        if csrf_error:
+            return csrf_error
         if message_text:
             try:
                 db.session.execute(
@@ -2924,6 +3186,10 @@ def chat_send_api(property_id, user_id):
     current_user = session['user_id']
     message_text = (request.form.get('message') or '').strip()
 
+    csrf_error = _validate_csrf_request('chat', {'property_id': property_id, 'user_id': user_id}, expect_json=True)
+    if csrf_error:
+        return csrf_error
+
     if current_user == user_id:
         return jsonify({'error': 'Cannot chat with yourself'}), 400
 
@@ -2985,7 +3251,6 @@ def chat_send_api(property_id, user_id):
 
 
 @app.route('/api/properties/updates')
-@login_required
 def properties_updates_api():
     ensure_property_image_table()
     ensure_category_schema_compatibility()
@@ -3020,6 +3285,10 @@ def update_listing_status(property_id):
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('my_listings')
+    if csrf_error:
+        return csrf_error
+
     status_value = _normalize_property_status(request.form.get('prop_status'))
 
     try:
@@ -3045,12 +3314,12 @@ def my_listings_updates_api():
     if not user:
         return jsonify({'error': 'Authentication required.'}), 401
 
-    listings = _build_my_listings_payload(user.user_id)
-    return jsonify({'listings': listings})
+    page = _coerce_page(request.args.get('page', 1), default=1)
+    payload = _build_my_listings_payload(user.user_id, page=page, per_page=12)
+    return jsonify({'listings': payload['listings']})
 
 
 @app.route('/api/property/<int:property_id>/details')
-@login_required
 def property_detail_api(property_id):
     payload = _build_property_detail_payload(property_id, session.get('user_id'))
     if not payload:
@@ -3114,6 +3383,10 @@ def register():
         return _authenticated_entry_redirect()
 
     if request.method == 'POST':
+
+        csrf_error = _validate_csrf_request('register')
+        if csrf_error:
+            return csrf_error
 
         fname = request.form.get('fname')
         lname = request.form.get('lname')
@@ -3256,6 +3529,10 @@ def login():
 
     if request.method == 'POST':
 
+        csrf_error = _validate_csrf_request('login')
+        if csrf_error:
+            return csrf_error
+
         email = request.form.get('email')
         password = request.form.get('password')
 
@@ -3294,6 +3571,10 @@ def profile():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        csrf_error = _validate_csrf_request('profile')
+        if csrf_error:
+            return csrf_error
+
         first_name = request.form.get('first_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
         email = request.form.get('email', '').strip()
@@ -3343,6 +3624,10 @@ def update_profile_avatar():
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('profile')
+    if csrf_error:
+        return csrf_error
+
     uploaded_file = request.files.get('avatar')
     new_avatar_name, error_message = _save_user_avatar(uploaded_file)
     if error_message:
@@ -3374,6 +3659,10 @@ def remove_profile_avatar():
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('profile')
+    if csrf_error:
+        return csrf_error
+
     current_avatar = (getattr(user, 'user_avatar', None) or '').strip()
     if not current_avatar:
         return redirect(url_for('profile'))
@@ -3399,12 +3688,14 @@ def my_listings():
     if not user:
         return redirect(url_for('login'))
 
-    listings = _build_my_listings_payload(user.user_id)
+    page = _coerce_page(request.args.get('page', 1), default=1)
+    payload = _build_my_listings_payload(user.user_id, page=page, per_page=12)
 
     return render_template(
         'my_listings.html',
         title='My Listings',
-        listings=listings,
+        listings=payload['listings'],
+        pagination=payload['pagination'],
         current_user_avatar_url=_user_avatar_url(getattr(user, 'user_avatar', None)),
     )
 
@@ -3418,41 +3709,10 @@ def my_favorites():
     if not user:
         return redirect(url_for('login'))
 
-    try:
-        rows = db.session.execute(
-            text('''
-                SELECT p.*, u.user_fname, u.user_lname
-                FROM favorites f
-                JOIN property p ON p.prop_id = f.fav_propid
-                JOIN users u ON u.user_id = p.prop_userid
-                WHERE f.fav_userid = :uid
-                ORDER BY f.fav_id DESC
-            '''),
-            {'uid': user.user_id}
-        ).mappings().all()
-    except Exception:
-        rows = []
+    page = _coerce_page(request.args.get('page', 1), default=1)
+    payload = _build_favorites_payload(user.user_id, page=page, per_page=12)
 
-    favorites = []
-    for row in rows:
-        favorites.append({
-            'prop_id': row['prop_id'],
-            'prop_title': row['prop_title'],
-            'prop_price': row['prop_price'],
-            'prop_location': row['prop_location'],
-            'prop_type': row['prop_type'],
-            'listing_type': row['listing_type'],
-            'owner_name': f"{row['user_fname']} {row['user_lname']}",
-            'image': None,
-            'image_url': None,
-        })
-
-    for favorite in favorites:
-        favorite_images = get_property_images(favorite['prop_id'])
-        favorite['image'] = favorite_images[0]['image_path'] if favorite_images else None
-        favorite['image_url'] = _upload_image_url(favorite['image']) if favorite['image'] else _placeholder_property_image_url()
-
-    return render_template('my_favorites.html', title='My Favorites', favorites=favorites)
+    return render_template('my_favorites.html', title='My Favorites', favorites=payload['favorites'], pagination=payload['pagination'])
 
 
 @app.route('/account-settings/', methods=['GET', 'POST'])
@@ -3463,6 +3723,10 @@ def account_settings():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        csrf_error = _validate_csrf_request('account_settings')
+        if csrf_error:
+            return csrf_error
+
         action = request.form.get('action', '').strip()
 
         if action == 'change_password':
@@ -3585,6 +3849,10 @@ def update_theme():
     if not user:
         return jsonify({'success': False, 'message': 'Authentication required.'}), 401
 
+    csrf_error = _validate_csrf_request('account_settings', expect_json=True)
+    if csrf_error:
+        return csrf_error
+
     selected_theme = _normalized_theme(request.form.get('theme'))
     if selected_theme not in {'light', 'dark'}:
         return jsonify({'success': False, 'message': 'Invalid theme value.'}), 400
@@ -3606,6 +3874,10 @@ def delete_listing(property_id):
     user = get_current_user()
     if not user:
         return redirect(url_for('login'))
+
+    csrf_error = _validate_csrf_request('my_listings')
+    if csrf_error:
+        return csrf_error
 
     try:
         property_row = db.session.execute(
@@ -3674,6 +3946,10 @@ def delete_listing_image(property_id, image_id):
     if not user:
         return redirect(url_for('login'))
 
+    csrf_error = _validate_csrf_request('post_property', {'property_id': property_id})
+    if csrf_error:
+        return csrf_error
+
     try:
         property_row = db.session.execute(
             text('SELECT prop_userid FROM property WHERE prop_id = :pid'),
@@ -3729,6 +4005,10 @@ def remove_favorite(property_id):
     user = get_current_user()
     if not user:
         return redirect(url_for('login'))
+
+    csrf_error = _validate_csrf_request('my_favorites')
+    if csrf_error:
+        return csrf_error
 
     try:
         db.session.execute(

@@ -73,6 +73,7 @@
               <img src="{{ user_avatar_url }}" alt="{{ user.user_fname }} avatar" class="profile-avatar-img">
             </div>
             <form id="avatarUploadForm" action="{{ url_for('update_profile_avatar') }}" method="post" enctype="multipart/form-data" class="profile-avatar-actions">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input id="avatarInput" type="file" name="avatar" accept=".jpg,.jpeg,.png,.webp" class="d-none" required>
               <button type="button" id="avatarEditBtn" class="profile-avatar-edit-btn" aria-label="Edit profile photo" title="Edit profile photo">
                 <i class="bi bi-pencil-fill"></i>
@@ -82,6 +83,7 @@
           <small class="text-muted d-block mb-3">Allowed: JPG, JPEG, PNG, WEBP. Max size: 10MB.</small>
           {% if user.user_avatar %}
           <form action="{{ url_for('remove_profile_avatar') }}" method="post" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit" class="btn btn-outline-danger btn-sm px-3 py-2">
               <i class="bi bi-trash3 me-2"></i>Remove photo
             </button>
@@ -129,6 +131,7 @@
           </div>
 
           <form method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">First Name</label>

@@ -18,7 +18,7 @@
     </div>
   </div>
 
-  <div data-my-listings-feed data-poll-url="{{ url_for('my_listings_updates_api') }}" data-post-url="{{ url_for('post_property') }}">
+  <div data-my-listings-feed data-poll-url="{{ url_for('my_listings_updates_api', page=pagination.page if pagination else 1) }}" data-post-url="{{ url_for('post_property') }}">
   {% if listings %}
     <div id="myListingsFeed" class="row g-4" data-snapshot='{{ listings|tojson|safe }}'>
       {% for listing in listings %}
@@ -46,6 +46,7 @@
                   <p class="fw-semibold text-primary mb-3">{{ listing.prop_price|naira }}</p>
                   <p class="small text-muted mb-2"><i class="bi bi-eye me-1"></i>{{ listing.prop_views|default(0) }} view{% if listing.prop_views|default(0) != 1 %}s{% endif %}</p>
                   <form method="post" action="{{ listing.status_update_url }}" class="d-flex gap-2 align-items-center mb-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <select name="prop_status" class="form-select form-select-sm" style="max-width: 150px;">
                       <option value="available" {% if listing.prop_status == 'available' %}selected{% endif %}>Available</option>
                       <option value="pending" {% if listing.prop_status == 'pending' %}selected{% endif %}>Pending</option>
@@ -62,6 +63,7 @@
                     <a href="{{ url_for('property_detail', property_id=listing.prop_id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-eye me-1"></i>View</a>
                     <a href="{{ url_for('edit_listing', property_id=listing.prop_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil-square me-1"></i>Edit</a>
                     <form method="post" action="{{ url_for('delete_listing', property_id=listing.prop_id) }}" onsubmit="return confirm('Delete this listing permanently?');" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                       <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
                     </form>
                   </div>
@@ -83,5 +85,19 @@
     </div>
   {% endif %}
   </div>
+
+  {% if pagination and pagination.pages > 1 %}
+    <nav class="mt-4" aria-label="My listings pagination">
+      <ul class="pagination justify-content-center mb-0">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('my_listings', page=pagination.prev_num) if pagination.has_prev else '#' }}">Previous</a>
+        </li>
+        <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('my_listings', page=pagination.next_num) if pagination.has_next else '#' }}">Next</a>
+        </li>
+      </ul>
+    </nav>
+  {% endif %}
 </div>
 {% endblock %}

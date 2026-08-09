@@ -15,6 +15,7 @@
 
       <div class="col-lg-6">
         <form action="{{ url_for('login') }}" method="POST" class="login-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <h2 class="mb-2">Welcome Back</h2>
           <p class="text-muted mb-4">Sign in to manage your listings, favorites, and messages.</p>
 

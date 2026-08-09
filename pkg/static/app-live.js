@@ -3,9 +3,18 @@
   var buttonState = new WeakMap();
   var defaultLoadingHtml = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Processing...';
 
+  function getCsrfToken() {
+    var tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    return tokenMeta ? tokenMeta.getAttribute('content') || '' : '';
+  }
+
   function fetchJson(url, options) {
     var requestOptions = options || {};
     var headers = Object.assign({ Accept: 'application/json' }, requestOptions.headers || {});
+    var method = (requestOptions.method || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD') {
+      headers['X-CSRF-Token'] = getCsrfToken();
+    }
 
     return fetch(url, Object.assign({}, requestOptions, { headers: headers })).then(function (response) {
       return response

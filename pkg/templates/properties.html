@@ -164,7 +164,11 @@
           </div>
 
           <div class="col-12 col-md-6 col-lg-4">
-            <a href="{{ url_for('post_property') }}" class="btn btn-add-property w-100">+ Add Property</a>
+            {% if session.get('user_id') %}
+              <a href="{{ url_for('post_property') }}" class="btn btn-add-property w-100">+ Add Property</a>
+            {% else %}
+              <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">Sign in to Post Property</a>
+            {% endif %}
           </div>
 
           {% if session.get('user_id') %}
@@ -239,6 +243,20 @@
             </div>
           {% endif %}
         </div>
+
+        {% if pagination and pagination.pages > 1 %}
+          <nav class="mt-4" aria-label="Properties pagination">
+            <ul class="pagination justify-content-center mb-0">
+              <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('properties', **_properties_page_params(filters, selected_category_id, pagination.prev_num)) if pagination.has_prev else '#' }}">Previous</a>
+              </li>
+              <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+              <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('properties', **_properties_page_params(filters, selected_category_id, pagination.next_num)) if pagination.has_next else '#' }}">Next</a>
+              </li>
+            </ul>
+          </nav>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -248,6 +266,7 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
           <form method="post" action="{{ url_for('save_search') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="modal-header">
               <h5 class="modal-title fw-bold" id="saveSearchModalLabel">Save Search</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

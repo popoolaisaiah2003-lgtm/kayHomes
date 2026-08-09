@@ -9,14 +9,16 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 from pkg import app, ensure_admin_schema_compatibility, ensure_category_schema_compatibility
-from pkg.models import Admin, Category, ContactMessage, Favorite, Property, User, db
+from pkg.models import Admin, Category, ContactMessage, Favorite, Property, PropertyReview, User, db
 from pkg.user_routes import (
     MAX_PROPERTY_IMAGES,
+    _build_pagination,
     _serialize_property_model,
     _upload_image_url,
     delete_image_file,
     ensure_contact_message_table,
     ensure_property_image_table,
+    get_bulk_cover_images,
     get_property_image_columns,
     get_property_images,
     save_property_images,
@@ -893,6 +895,134 @@ def admin_delete_contact_message(message_id):
         flash('Unable to delete message right now.', 'danger')
 
     return redirect(url_for('admin_contact_messages'))
+
+
+@app.route('/admin/users/')
+@admin_required
+def admin_users():
+    page = request.args.get('page', 1, type=int) or 1
+    search_query = (request.args.get('q') or '').strip()
+
+    query = User.query
+    if search_query:
+        like_pattern = f"%{search_query}%"
+        query = query.filter(
+            or_(
+                User.user_fname.ilike(like_pattern),
+                User.user_lname.ilike(like_pattern),
+                User.user_email.ilike(like_pattern),
+            )
+        )
+
+    total = query.count() or 0
+    pagination = _build_pagination(total, page, 12)
+    users = (
+        query
+        .order_by(User.user_id.desc())
+        .offset((pagination.page - 1) * pagination.per_page)
+        .limit(pagination.per_page)
+        .all()
+    )
+
+    return render_template('admin_users.html', title='Users', users=users, pagination=pagination, search_query=search_query)
+
+
+@app.route('/admin/users/<int:user_id>')
+@admin_required
+def admin_user_detail(user_id):
+    user = User.query.filter_by(user_id=user_id).first()
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_users'))
+
+    listing_count = Property.query.filter_by(prop_userid=user.user_id).count() or 0
+    favorite_count = Favorite.query.filter_by(fav_userid=user.user_id).count() or 0
+    review_count = PropertyReview.query.filter_by(reviewer_id=user.user_id).count() or 0
+
+    return render_template(
+        'admin_user_detail.html',
+        title='User Detail',
+        user_item=user,
+        listing_count=listing_count,
+        favorite_count=favorite_count,
+        review_count=review_count,
+    )
+
+
+@app.route('/admin/reviews/')
+@admin_required
+def admin_reviews():
+    page = request.args.get('page', 1, type=int) or 1
+    total = PropertyReview.query.count() or 0
+    pagination = _build_pagination(total, page, 12)
+
+    rows = db.session.execute(
+        text(
+            '''
+            SELECT r.review_id, r.rating, r.review_text, r.created_at, r.property_id,
+                   p.prop_title, u.user_fname, u.user_lname
+            FROM property_reviews r
+            JOIN property p ON p.prop_id = r.property_id
+            JOIN users u ON u.user_id = r.reviewer_id
+            ORDER BY r.created_at DESC, r.review_id DESC
+            LIMIT :limit OFFSET :offset
+            '''
+        ),
+        {'limit': pagination.per_page, 'offset': (pagination.page - 1) * pagination.per_page}
+    ).mappings().all()
+
+    return render_template('admin_reviews.html', title='Review Management', reviews=rows, pagination=pagination)
+
+
+@app.route('/admin/reviews/<int:review_id>/delete', methods=['POST'])
+@admin_required
+def admin_delete_review(review_id):
+    if not _validate_admin_csrf():
+        return redirect(url_for('admin_reviews'))
+
+    review = PropertyReview.query.filter_by(review_id=review_id).first()
+    if not review:
+        flash('Review not found.', 'danger')
+        return redirect(url_for('admin_reviews'))
+
+    try:
+        db.session.delete(review)
+        db.session.commit()
+        flash('Review deleted successfully.', 'success')
+    except Exception:
+        db.session.rollback()
+        flash('Unable to delete review right now.', 'danger')
+
+    return redirect(url_for('admin_reviews'))
+
+
+@app.route('/admin/state-lga/')
+@admin_required
+def admin_state_lga():
+    state_rows = db.session.execute(
+        text(
+            '''
+            SELECT s.state_id, s.state_name, COUNT(l.lga_id) AS lga_count
+            FROM state s
+            LEFT JOIN lga l ON l.lga_stateid = s.state_id
+            GROUP BY s.state_id, s.state_name
+            ORDER BY s.state_name ASC
+            '''
+        )
+    ).mappings().all()
+
+    lga_rows = db.session.execute(
+        text(
+            '''
+            SELECT l.lga_id, l.lga_name, s.state_name
+            FROM lga l
+            JOIN state s ON s.state_id = l.lga_stateid
+            ORDER BY s.state_name ASC, l.lga_name ASC
+            '''
+        )
+    ).mappings().all()
+
+    return render_template('admin_state_lga.html', title='State and LGA', states=state_rows, lgas=lga_rows)
 
 
 @app.route('/admin/property/<int:property_id>/edit', methods=['GET', 'POST'])

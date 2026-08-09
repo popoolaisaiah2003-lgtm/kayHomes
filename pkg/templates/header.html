@@ -35,11 +35,11 @@
               <li class="nav-item">
                 <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
+              </li>
               {% if session.get('user_id') %}
                 {% set logged_in_user_first_name = session.get('user_name') or 'User' %}
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
-                </li>
                 <li class="nav-item">
                   <a class="nav-link {% if request.endpoint in ['contact'] %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
                 </li>

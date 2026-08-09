@@ -69,6 +69,7 @@
             <h5 class="fw-semibold mb-2">Change Password</h5>
             <p class="text-muted small mb-3">Update your password to keep your account secure.</p>
             <form method="post" class="row g-2 align-items-end">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="action" value="change_password">
               <div class="col-md-4">
                 <label class="form-label small">Current Password</label>
@@ -92,6 +93,7 @@
             <h5 class="fw-semibold mb-2">Change Email</h5>
             <p class="text-muted small mb-3">Update the email address linked to your account.</p>
             <form method="post" class="row g-2 align-items-end">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="action" value="change_email">
               <div class="col-md-6">
                 <label class="form-label small">New Email</label>
@@ -121,6 +123,7 @@
             <h5 class="fw-semibold mb-2 text-danger">Delete Account</h5>
             <p class="text-muted small mb-3">This action is permanent. Type DELETE and provide your password to continue.</p>
             <form method="post" class="row g-2 align-items-end" onsubmit="return confirm('Are you sure? This action cannot be undone.');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <input type="hidden" name="action" value="delete_account">
               <div class="col-md-4">
                 <label class="form-label small">Type DELETE</label>
@@ -176,7 +179,8 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
           },
           body: new URLSearchParams({ theme: selectedTheme }).toString()
         })

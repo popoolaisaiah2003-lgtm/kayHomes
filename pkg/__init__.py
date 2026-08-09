@@ -3,7 +3,7 @@ import cloudinary.uploader
 import cloudinary.api
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-from flask import Flask
+from flask import Flask, render_template
 from flask_mail import Mail
 from pkg.models import db
 from sqlalchemy import inspect, text
@@ -26,7 +26,7 @@ cloudinary.config(
     secure=True
 )
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'securedkey'))
+app.config['SECRET_KEY'] = app.config.get('SECRET_KEY')
 
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
@@ -74,6 +74,22 @@ def format_naira(value):
 @app.template_filter('naira')
 def naira_filter(value):
     return format_naira(value)
+
+
+@app.errorhandler(404)
+def handle_not_found(error):
+    return render_template('user/404.html', error=error), 404
+
+
+@app.errorhandler(500)
+def handle_internal_error(error):
+    db.session.rollback()
+    return render_template('user/500.html', error=error), 500
+
+
+@app.errorhandler(503)
+def handle_service_unavailable(error):
+    return render_template('user/503.html', error=error), 503
 
 
 def ensure_admin_schema_compatibility():

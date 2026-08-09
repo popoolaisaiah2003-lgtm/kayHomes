@@ -23,7 +23,13 @@ else:
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-SECRET_KEY = os.getenv("SECRET_KEY", "securedkey")
+FLASK_ENV = os.getenv("FLASK_ENV", "production").lower()
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if FLASK_ENV == 'development':
+        SECRET_KEY = 'securedkey'
+    else:
+        raise RuntimeError('SECRET_KEY must be set in production.')
 
 CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")

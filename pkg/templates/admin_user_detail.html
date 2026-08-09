@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}User Detail - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="container py-5 fade-up">
+  <div class="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+    <div>
+      <h2 class="mb-1">User Detail</h2>
+      <p class="text-muted mb-0">Summary for this user account.</p>
+    </div>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary btn-sm">Back to Users</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Name</small><h5 class="mb-0">{{ user_item.user_fname }} {{ user_item.user_lname }}</h5></div></div></div>
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Email</small><h5 class="mb-0">{{ user_item.user_email }}</h5></div></div></div>
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Phone</small><h5 class="mb-0">{{ user_item.user_phone or '-' }}</h5></div></div></div>
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Listings</small><h4 class="mb-0">{{ listing_count }}</h4></div></div></div>
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Favorites</small><h4 class="mb-0">{{ favorite_count }}</h4></div></div></div>
+    <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><small class="text-muted d-block">Reviews</small><h4 class="mb-0">{{ review_count }}</h4></div></div></div>
+  </div>
+</div>
+{% endblock %}

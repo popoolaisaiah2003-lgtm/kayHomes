@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="description" content="KayHomes is a leading property website in Nigeria with property listings for rent and lease.
    KayHomes is a premier real estate and property platform providing modern housing solutions. We offer home seekers an easy way 
    to find premium rental properties and modern apartments tailored specifically for luxury and everyday comfort.">
@@ -99,8 +100,8 @@
             <ul class="list-unstyled small mb-0 d-grid gap-2">
               <li><a href="{{ url_for('home') }}">Home</a></li>
               <li><a href="{{ url_for('about') }}">About Us</a></li>
+              <li><a href="{{ url_for('properties') }}">Properties</a></li>
               {% if session.get('user_id') %}
-                <li><a href="{{ url_for('properties') }}">Properties</a></li>
                 <li><a href="{{ url_for('contact') }}">Contact</a></li>
               {% endif %}
             </ul>

@@ -878,6 +878,132 @@ def ensure_state_lga_seed_data():
             app.logger.warning('Skipping state/lga seed compatibility due to database error: %s', exc)
 
 
+def ensure_startup_schema_compatibility():
+    """Production-safe compatibility patch for Railway MySQL before requests are handled."""
+    with app.app_context():
+        try:
+            dialect = db.engine.dialect.name
+            if dialect != 'mysql':
+                return
+
+            db_name = db.session.execute(text('SELECT DATABASE()')).scalar()
+            if not db_name:
+                return
+
+            def table_exists(table_name):
+                return bool(
+                    db.session.execute(
+                        text(
+                            '''
+                            SELECT 1
+                            FROM INFORMATION_SCHEMA.TABLES
+                            WHERE TABLE_SCHEMA = :schema_name
+                              AND TABLE_NAME = :table_name
+                            LIMIT 1
+                            '''
+                        ),
+                        {'schema_name': db_name, 'table_name': table_name},
+                    ).scalar()
+                )
+
+            def column_exists(table_name, column_name):
+                return bool(
+                    db.session.execute(
+                        text(
+                            '''
+                            SELECT 1
+                            FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_SCHEMA = :schema_name
+                              AND TABLE_NAME = :table_name
+                              AND COLUMN_NAME = :column_name
+                            LIMIT 1
+                            '''
+                        ),
+                        {
+                            'schema_name': db_name,
+                            'table_name': table_name,
+                            'column_name': column_name,
+                        },
+                    ).scalar()
+                )
+
+            create_statements = {
+                'notifications': '''
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        notification_id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        type VARCHAR(40) NOT NULL,
+                        title VARCHAR(150) NOT NULL,
+                        message VARCHAR(255) NOT NULL,
+                        link VARCHAR(255) NULL,
+                        is_read TINYINT(1) NOT NULL DEFAULT 0,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_notifications_user
+                            FOREIGN KEY (user_id) REFERENCES users(user_id)
+                            ON DELETE CASCADE ON UPDATE CASCADE,
+                        INDEX idx_notifications_user_created (user_id, created_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                ''',
+                'saved_searches': '''
+                    CREATE TABLE IF NOT EXISTS saved_searches (
+                        search_id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        name VARCHAR(150) NOT NULL,
+                        q VARCHAR(255) NULL,
+                        state VARCHAR(120) NULL,
+                        lga VARCHAR(120) NULL,
+                        property_type VARCHAR(120) NULL,
+                        bedrooms INT NULL,
+                        bathrooms INT NULL,
+                        min_price INT NULL,
+                        max_price INT NULL,
+                        furnished VARCHAR(20) NULL,
+                        sort VARCHAR(20) NULL,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_saved_searches_user
+                            FOREIGN KEY (user_id) REFERENCES users(user_id)
+                            ON DELETE CASCADE ON UPDATE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                ''',
+                'property_view_events': '''
+                    CREATE TABLE IF NOT EXISTS property_view_events (
+                        view_event_id INT AUTO_INCREMENT PRIMARY KEY,
+                        property_id INT NOT NULL,
+                        owner_id INT NOT NULL,
+                        viewer_id INT NULL,
+                        viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_view_events_property
+                            FOREIGN KEY (property_id) REFERENCES property(prop_id)
+                            ON DELETE CASCADE ON UPDATE CASCADE,
+                        CONSTRAINT fk_view_events_owner
+                            FOREIGN KEY (owner_id) REFERENCES users(user_id)
+                            ON DELETE CASCADE ON UPDATE CASCADE,
+                        INDEX idx_view_events_owner_date (owner_id, viewed_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                ''',
+            }
+
+            for table_name, create_sql in create_statements.items():
+                if not table_exists(table_name):
+                    db.session.execute(text(create_sql))
+
+            alter_statements = [
+                ('users', 'user_avatar', 'ALTER TABLE users ADD COLUMN user_avatar VARCHAR(255) NULL'),
+                ('users', 'user_verified', 'ALTER TABLE users ADD COLUMN user_verified TINYINT(1) NOT NULL DEFAULT 0'),
+                ('property', 'prop_status', "ALTER TABLE property ADD COLUMN prop_status VARCHAR(20) NOT NULL DEFAULT 'available'"),
+                ('favorites', 'created_at', 'ALTER TABLE favorites ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'),
+            ]
+
+            for table_name, column_name, alter_sql in alter_statements:
+                if table_exists(table_name) and not column_exists(table_name, column_name):
+                    db.session.execute(text(alter_sql))
+
+            db.session.commit()
+        except (OperationalError, SQLAlchemyError) as exc:
+            db.session.rollback()
+            app.logger.warning('Startup schema compatibility skipped: %s', exc)
+
+
 def initialize_database():
     """Optional runtime initializer. Call explicitly after app import when needed."""
     with app.app_context():
@@ -886,12 +1012,16 @@ def initialize_database():
             ensure_admin_schema_compatibility()
             ensure_category_schema_compatibility()
             ensure_user_theme_schema_compatibility()
+            ensure_startup_schema_compatibility()
             ensure_runtime_tables_compatibility()
             ensure_property_reviews_table()
             ensure_state_lga_seed_data()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             app.logger.warning('Database initialization skipped: %s', exc)
+
+
+ensure_startup_schema_compatibility()
 
 
 from pkg import user_routes, admin_routes

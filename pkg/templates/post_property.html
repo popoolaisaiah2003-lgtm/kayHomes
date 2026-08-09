@@ -8,7 +8,7 @@
     <div class="col-md-8">
       <div class="property-form-shell fade-up">
       <h3 class="mb-4">{{ 'Edit Property' if property_data else 'Post a Property' }}</h3>
-      <form method="post" enctype="multipart/form-data" action="{{ url_for('post_property', property_id=property_data.prop_id) if property_data else url_for('post_property') }}">
+      <form id="propertyForm" method="post" enctype="multipart/form-data" action="{{ url_for('post_property', property_id=property_data.prop_id) if property_data else url_for('post_property') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <div class="mb-3">
@@ -34,6 +34,15 @@
               <option value="Short Let" {% if property_data and property_data.listing_type == 'Short Let' %}selected{% endif %}>Short Let</option>
             </select>
           </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Availability Status</label>
+          <select name="prop_status" class="form-select" required>
+            <option value="available" {% if not property_data or (property_data.prop_status|default('available')|lower) == 'available' %}selected{% endif %}>Available</option>
+            <option value="pending" {% if property_data and (property_data.prop_status|default('available')|lower) == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="rented" {% if property_data and (property_data.prop_status|default('available')|lower) == 'rented' %}selected{% endif %}>Rented</option>
+          </select>
         </div>
 
         <div class="mb-3">
@@ -67,6 +76,7 @@
             <select id="prop_lga" name="prop_lga" class="form-select" data-selected-lga="{{ property_data.prop_lga if property_data and property_data.prop_lga else '' }}" required>
               <option value="">Select local government</option>
             </select>
+            <div id="lgaValidationError" class="invalid-feedback d-block" style="display:none !important;"></div>
           </div>
         </div>
 
@@ -158,6 +168,8 @@
 
   const stateEl = document.getElementById('prop_state');
   const lgaEl = document.getElementById('prop_lga');
+  const propertyForm = document.getElementById('propertyForm');
+  const lgaValidationError = document.getElementById('lgaValidationError');
 
   function populateLgas(state) {
     lgaEl.innerHTML = '<option value="">Select local government</option>';
@@ -176,6 +188,39 @@
   stateEl.addEventListener('change', function(){
     populateLgas(this.value);
   });
+
+  function resetLgaError() {
+    if (!lgaValidationError) return;
+    lgaValidationError.style.display = 'none';
+    lgaValidationError.textContent = '';
+    lgaEl.classList.remove('is-invalid');
+  }
+
+  function showLgaError(message) {
+    if (!lgaValidationError) return;
+    lgaValidationError.style.display = 'block';
+    lgaValidationError.textContent = message;
+    lgaEl.classList.add('is-invalid');
+  }
+
+  if (lgaEl) {
+    lgaEl.addEventListener('change', function() {
+      resetLgaError();
+    });
+  }
+
+  if (propertyForm) {
+    propertyForm.addEventListener('submit', function(event) {
+      const hasState = Boolean((stateEl?.value || '').trim());
+      const hasLga = Boolean((lgaEl?.value || '').trim());
+
+      resetLgaError();
+      if (hasState && !hasLga) {
+        event.preventDefault();
+        showLgaError('Please select a local government area for the selected state.');
+      }
+    });
+  }
 
   const imageInput = document.getElementById('images');
   const imageError = document.getElementById('imageValidationError');

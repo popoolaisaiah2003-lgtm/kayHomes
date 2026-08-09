@@ -10,6 +10,10 @@
     <div class="details-header-card">
       <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">{{ property.get('prop_type') or 'Property' }}</span>
+        {% if property.get('status') %}
+          <span class="badge {{ property['status']['badge_class'] }} px-3 py-2 fs-6">{{ property['status']['label'] }}</span>
+        {% endif %}
+        <span class="badge bg-light text-dark border px-3 py-2 fs-6"><i class="bi bi-eye me-1"></i>{{ property.get('prop_views', 0) }} view{% if property.get('prop_views', 0) != 1 %}s{% endif %}</span>
         {% if property.get('listing_type') %}
           <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">{{ property['listing_type'] }}</span>
         {% endif %}
@@ -331,6 +335,25 @@
                 </div>
               {% endif %}
 
+              {% if can_message and owner.quick_contact_links %}
+                <div class="d-grid gap-2 d-sm-flex">
+                  <a
+                    href="{{ owner.quick_contact_links.whatsapp_url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-success btn-lg shadow-sm flex-fill"
+                  >
+                    <i class="bi bi-whatsapp me-2" aria-hidden="true"></i>Chat on WhatsApp
+                  </a>
+                  <a
+                    href="{{ owner.quick_contact_links.call_url }}"
+                    class="btn btn-outline-dark btn-lg flex-fill"
+                  >
+                    <i class="bi bi-telephone me-2" aria-hidden="true"></i>Call Owner
+                  </a>
+                </div>
+              {% endif %}
+
               {% if session.get('user_id') %}
                 <button
                   id="favoriteToggle"
@@ -349,12 +372,24 @@
               <h6 class="fw-bold mb-3"><i class="bi bi-person-circle text-primary me-2"></i>Owner Information</h6>
               <div class="d-flex align-items-center gap-3 mb-3">
                 <div class="owner-avatar-circle">
-                  {{ (owner.user_fname[:1] if owner.user_fname else 'O')|upper }}
+                  <img src="{{ owner.avatar_url }}" alt="{{ owner.user_fname }} avatar" class="owner-avatar-img">
                 </div>
                 <div>
                   <h6 class="fw-bold mb-0">{{ owner.user_fname }} {{ owner.user_lname }}</h6>
-                  <span class="badge bg-success-subtle text-success small">Verified Host</span>
+                  {% if owner.is_verified %}
+                    <span class="badge bg-success-subtle text-success small">Verified Host</span>
+                  {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary small">Host</span>
+                  {% endif %}
                 </div>
+              </div>
+
+              <div class="owner-profile-badge mb-3">
+                <div class="owner-profile-row"><span class="text-muted">Name</span><strong>{{ owner.user_fname }} {{ owner.user_lname }}</strong></div>
+                <div class="owner-profile-row"><span class="text-muted">Member since</span><strong>{{ owner.member_since_year or 'N/A' }}</strong></div>
+                <div class="owner-profile-row"><span class="text-muted">Total listings</span><strong>{{ owner.total_listings or 0 }}</strong></div>
+                <div class="owner-profile-row"><span class="text-muted">Average rating</span><strong>{% if owner_review_stats and owner_review_stats.review_count > 0 %}{{ owner_review_stats.avg_rating_display }}{% else %}0.0{% endif %}</strong></div>
+                <div class="owner-profile-row"><span class="text-muted">Status</span><strong>{% if owner.is_verified %}Verified{% else %}Unverified{% endif %}</strong></div>
               </div>
 
               <div class="d-flex flex-column gap-2 small mb-3">

@@ -41,9 +41,12 @@ app.config.setdefault('MAIL_DEFAULT_SENDER', 'noreply@kayhomes.local')
 # Uploads
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+AVATAR_UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads', 'avatars')
+app.config['AVATAR_UPLOAD_FOLDER'] = AVATAR_UPLOAD_FOLDER
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['AVATAR_UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 mail = Mail(app)
@@ -160,16 +163,44 @@ NIGERIAN_STATES = [
 
 
 SEED_LGAS_BY_STATE = {
+    'Abia': ['Aba North', 'Aba South', 'Umuahia North', 'Umuahia South', 'Arochukwu'],
+    'Adamawa': ['Yola North', 'Yola South', 'Mubi North', 'Mubi South', 'Jimeta'],
+    'Akwa Ibom': ['Uyo', 'Eket', 'Ikot Ekpene', 'Oron', 'Abak'],
     'Lagos': ['Ikeja', 'Eti-Osa', 'Surulere', 'Lagos Island', 'Ikorodu', 'Alimosho'],
     'Abuja (FCT)': ['Abuja Municipal', 'Gwagwalada', 'Kwali', 'Kuje', 'Bwari'],
+    'Cross River': ['Calabar Municipal', 'Calabar South', 'Ikom', 'Ogoja', 'Obudu'],
+    'Ebonyi': ['Abakaliki', 'Afikpo North', 'Afikpo South', 'Onicha', 'Ohaozara'],
+    'Edo': ['Oredo', 'Egor', 'Ikpoba-Okha', 'Ovia North-East', 'Esan West'],
+    'Gombe': ['Gombe', 'Akko', 'Billiri', 'Dukku', 'Yamaltu-Deba'],
+    'Jigawa': ['Dutse', 'Hadejia', 'Kazaure', 'Gumel', 'Ringim'],
     'Oyo': ['Ibadan North', 'Ibadan South-West', 'Ogbomoso North', 'Oyo East', 'Iseyin'],
+    'Kebbi': ['Birnin Kebbi', 'Argungu', 'Yauri', 'Zuru', 'Jega'],
     'Ogun': ['Abeokuta North', 'Abeokuta South', 'Ifo', 'Sagamu', 'Ijebu East'],
+    'Osun': ['Osogbo', 'Ife Central', 'Ilesa East', 'Ede North', 'Ikire'],
+    'Plateau': ['Jos North', 'Jos South', 'Barkin Ladi', 'Mangu', 'Pankshin'],
     'Rivers': ['Port Harcourt', 'Obio-Akpor', 'Eleme', 'Okrika', 'Ikwerre'],
     'Anambra': ['Awka South', 'Awka North', 'Onitsha North', 'Onitsha South', 'Nnewi North'],
     'Enugu': ['Enugu North', 'Enugu South', 'Enugu East', 'Awgu', 'Aninri'],
     'Delta': ['Warri South', 'Warri North', 'Ethiope East', 'Sapele', 'Ughelli South'],
     'Kaduna': ['Kaduna North', 'Kaduna South', 'Zaria', 'Kachia', 'Jemaa'],
     'Kano': ['Kano Municipal', 'Fagge', 'Gwale', 'Dala', 'Nassarawa'],
+    'Katsina': ['Katsina', 'Funtua', 'Daura', 'Bakori', 'Dutsin-Ma'],
+    'Bauchi': ['Bauchi', 'Azare', 'Ningi', 'Misau', 'Jama\'are'],
+    'Borno': ['Maiduguri', 'Bama', 'Dikwa', 'Gwoza', 'Kaga'],
+    'Benue': ['Makurdi', 'Gboko', 'Otukpo', 'Vandeikya', 'Katsina-Ala'],
+    'Bayelsa': ['Yenagoa', 'Nembe', 'Brass', 'Ogbia', 'Sagbama'],
+    'Imo': ['Owerri Municipal', 'Orlu', 'Okigwe', 'Mbaitoli', 'Aboh Mbaise'],
+    'Ondo': ['Akure South', 'Akure North', 'Owo', 'Ondo East', 'Ondo West'],
+    'Ekiti': ['Ado Ekiti', 'Ikere', 'Oye', 'Irepodun/Ifelodun', 'Emure'],
+    'Kogi': ['Lokoja', 'Okene', 'Idah', 'Ankpa', 'Bassa'],
+    'Kwara': ['Ilorin East', 'Ilorin West', 'Offa', 'Omu-Aran', 'Kaiama'],
+    'Niger': ['Minna', 'Suleja', 'Kontagora', 'Bida', 'Zungeru'],
+    'Nasarawa': ['Lafia', 'Akwanga', 'Keffi', 'Kokona', 'Doma'],
+    'Sokoto': ['Sokoto North', 'Sokoto South', 'Gwadabawa', 'Tambuwal', 'Wurno'],
+    'Taraba': ['Jalingo', 'Wukari', 'Lau', 'Bali', 'Gashaka'],
+    'Yobe': ['Damaturu', 'Potiskum', 'Gashua', 'Bade', 'Fika'],
+    'Zamfara': ['Gusau', 'Anka', 'Bakura', 'Bungudu', 'Maradun'],
+
 }
 
 
@@ -338,7 +369,7 @@ def ensure_category_schema_compatibility():
 
 
 def ensure_user_theme_schema_compatibility():
-    """Ensure users table has a theme column with safe default values."""
+    """Ensure users table has theme/avatar/verification columns with safe defaults."""
     with app.app_context():
         try:
             inspector = inspect(db.engine)
@@ -352,8 +383,19 @@ def ensure_user_theme_schema_compatibility():
                 db.session.execute(text("ALTER TABLE users ADD COLUMN theme VARCHAR(20) NOT NULL DEFAULT 'light'"))
                 schema_changed = True
 
+            if 'user_avatar' not in columns:
+                db.session.execute(text('ALTER TABLE users ADD COLUMN user_avatar VARCHAR(255) NULL'))
+                schema_changed = True
+
+            if 'user_verified' not in columns:
+                db.session.execute(text('ALTER TABLE users ADD COLUMN user_verified TINYINT(1) NOT NULL DEFAULT 0'))
+                schema_changed = True
+
             db.session.execute(
                 text("UPDATE users SET theme = 'light' WHERE theme IS NULL OR theme NOT IN ('light', 'dark')")
+            )
+            db.session.execute(
+                text('UPDATE users SET user_verified = 0 WHERE user_verified IS NULL')
             )
 
             if schema_changed:
@@ -404,6 +446,57 @@ def ensure_runtime_tables_compatibility():
                     pimg_propid INT NOT NULL
                 )
             '''
+            create_saved_searches_sql = f'''
+                CREATE TABLE IF NOT EXISTS saved_searches (
+                    search_id {auto_pk},
+                    user_id INT NOT NULL,
+                    name VARCHAR(150) NOT NULL,
+                    q VARCHAR(255) NULL,
+                    state VARCHAR(120) NULL,
+                    lga VARCHAR(120) NULL,
+                    property_type VARCHAR(120) NULL,
+                    bedrooms INT NULL,
+                    bathrooms INT NULL,
+                    min_price INT NULL,
+                    max_price INT NULL,
+                    furnished VARCHAR(20) NULL,
+                    sort VARCHAR(20) NULL,
+                    created_at DATETIME NOT NULL DEFAULT {now_default},
+                    CONSTRAINT fk_saved_searches_user
+                        FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                )
+            '''
+            create_notifications_sql = f'''
+                CREATE TABLE IF NOT EXISTS notifications (
+                    notification_id {auto_pk},
+                    user_id INT NOT NULL,
+                    type VARCHAR(40) NOT NULL,
+                    title VARCHAR(150) NOT NULL,
+                    message VARCHAR(255) NOT NULL,
+                    link VARCHAR(255) NULL,
+                    is_read {bool_type} NOT NULL DEFAULT 0,
+                    created_at DATETIME NOT NULL DEFAULT {now_default},
+                    CONSTRAINT fk_notifications_user
+                        FOREIGN KEY (user_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                )
+            '''
+            create_property_view_events_sql = f'''
+                CREATE TABLE IF NOT EXISTS property_view_events (
+                    view_event_id {auto_pk},
+                    property_id INT NOT NULL,
+                    owner_id INT NOT NULL,
+                    viewer_id INT NULL,
+                    viewed_at DATETIME NOT NULL DEFAULT {now_default},
+                    CONSTRAINT fk_view_events_property
+                        FOREIGN KEY (property_id) REFERENCES property(prop_id)
+                        ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_view_events_owner
+                        FOREIGN KEY (owner_id) REFERENCES users(user_id)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                )
+            '''
 
             if not inspector.has_table('messages'):
                 db.session.execute(text(create_messages_sql))
@@ -415,6 +508,18 @@ def ensure_runtime_tables_compatibility():
 
             if not inspector.has_table('property_image'):
                 db.session.execute(text(create_property_image_sql))
+                db.session.commit()
+
+            if not inspector.has_table('saved_searches'):
+                db.session.execute(text(create_saved_searches_sql))
+                db.session.commit()
+
+            if not inspector.has_table('notifications'):
+                db.session.execute(text(create_notifications_sql))
+                db.session.commit()
+
+            if not inspector.has_table('property_view_events'):
+                db.session.execute(text(create_property_view_events_sql))
                 db.session.commit()
 
             inspector = inspect(db.engine)
@@ -453,6 +558,8 @@ def ensure_runtime_tables_compatibility():
                     db.session.execute(text('ALTER TABLE favorites ADD COLUMN fav_userid INT NULL'))
                 if 'fav_propid' not in fav_cols:
                     db.session.execute(text('ALTER TABLE favorites ADD COLUMN fav_propid INT NULL'))
+                if 'created_at' not in fav_cols:
+                    db.session.execute(text(f'ALTER TABLE favorites ADD COLUMN created_at DATETIME NOT NULL DEFAULT {now_default}'))
                 db.session.commit()
 
             if inspector.has_table('property'):
@@ -467,6 +574,8 @@ def ensure_runtime_tables_compatibility():
                     'bathrooms': 'ALTER TABLE property ADD COLUMN bathrooms INT NULL',
                     'toilets': 'ALTER TABLE property ADD COLUMN toilets INT NULL',
                     'area_sqm': 'ALTER TABLE property ADD COLUMN area_sqm INT NULL',
+                    'prop_status': "ALTER TABLE property ADD COLUMN prop_status VARCHAR(20) NOT NULL DEFAULT 'available'",
+                    'prop_views': 'ALTER TABLE property ADD COLUMN prop_views INT NOT NULL DEFAULT 0',
                 }
                 for col_name, alter_stmt in required_cols.items():
                     if col_name not in prop_cols:
@@ -477,6 +586,18 @@ def ensure_runtime_tables_compatibility():
                 db.session.execute(text('UPDATE property SET bathrooms = prop_bathroom WHERE bathrooms IS NULL AND prop_bathroom IS NOT NULL'))
                 db.session.execute(text('UPDATE property SET toilets = prop_toilet WHERE toilets IS NULL AND prop_toilet IS NOT NULL'))
                 db.session.execute(text('UPDATE property SET area_sqm = prop_area WHERE area_sqm IS NULL AND prop_area IS NOT NULL'))
+                db.session.execute(
+                    text(
+                        "UPDATE property SET prop_status = 'available' "
+                        "WHERE prop_status IS NULL OR LOWER(TRIM(prop_status)) NOT IN ('available', 'pending', 'rented')"
+                    )
+                )
+                db.session.execute(
+                    text(
+                        'UPDATE property SET prop_views = 0 '
+                        'WHERE prop_views IS NULL OR prop_views < 0'
+                    )
+                )
                 db.session.commit()
 
                 prop_cols = {col['name'] for col in inspect(db.engine).get_columns('property')}
@@ -492,6 +613,73 @@ def ensure_runtime_tables_compatibility():
                 if 'idx_property_prop_state' not in prop_indexes and 'prop_state' in prop_cols:
                     try:
                         db.session.execute(text('CREATE INDEX idx_property_prop_state ON property(prop_state)'))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+            if inspector.has_table('saved_searches'):
+                saved_cols = {col['name'] for col in inspector.get_columns('saved_searches')}
+                required_saved_cols = {
+                    'user_id': 'INT NOT NULL',
+                    'name': 'VARCHAR(150) NOT NULL',
+                    'q': 'VARCHAR(255) NULL',
+                    'state': 'VARCHAR(120) NULL',
+                    'lga': 'VARCHAR(120) NULL',
+                    'property_type': 'VARCHAR(120) NULL',
+                    'bedrooms': 'INT NULL',
+                    'bathrooms': 'INT NULL',
+                    'min_price': 'INT NULL',
+                    'max_price': 'INT NULL',
+                    'furnished': 'VARCHAR(20) NULL',
+                    'sort': 'VARCHAR(20) NULL',
+                    'created_at': f'DATETIME NOT NULL DEFAULT {now_default}',
+                }
+                for col_name, col_type in required_saved_cols.items():
+                    if col_name not in saved_cols:
+                        db.session.execute(text(f'ALTER TABLE saved_searches ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+
+            if inspector.has_table('notifications'):
+                notification_cols = {col['name'] for col in inspector.get_columns('notifications')}
+                required_notification_cols = {
+                    'user_id': 'INT NOT NULL',
+                    'type': 'VARCHAR(40) NOT NULL',
+                    'title': 'VARCHAR(150) NOT NULL',
+                    'message': 'VARCHAR(255) NOT NULL',
+                    'link': 'VARCHAR(255) NULL',
+                    'is_read': f'{bool_type} NOT NULL DEFAULT 0',
+                    'created_at': f'DATETIME NOT NULL DEFAULT {now_default}',
+                }
+                for col_name, col_type in required_notification_cols.items():
+                    if col_name not in notification_cols:
+                        db.session.execute(text(f'ALTER TABLE notifications ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+
+                notification_indexes = {idx['name'] for idx in inspector.get_indexes('notifications')}
+                if 'idx_notifications_user_created' not in notification_indexes:
+                    try:
+                        db.session.execute(text('CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at)'))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+
+            if inspector.has_table('property_view_events'):
+                view_event_cols = {col['name'] for col in inspector.get_columns('property_view_events')}
+                required_view_event_cols = {
+                    'property_id': 'INT NOT NULL',
+                    'owner_id': 'INT NOT NULL',
+                    'viewer_id': 'INT NULL',
+                    'viewed_at': f'DATETIME NOT NULL DEFAULT {now_default}',
+                }
+                for col_name, col_type in required_view_event_cols.items():
+                    if col_name not in view_event_cols:
+                        db.session.execute(text(f'ALTER TABLE property_view_events ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+
+                view_event_indexes = {idx['name'] for idx in inspector.get_indexes('property_view_events')}
+                if 'idx_view_events_owner_date' not in view_event_indexes:
+                    try:
+                        db.session.execute(text('CREATE INDEX idx_view_events_owner_date ON property_view_events(owner_id, viewed_at)'))
                         db.session.commit()
                     except Exception:
                         db.session.rollback()
@@ -630,18 +818,31 @@ def ensure_state_lga_seed_data():
             state_rows = db.session.execute(text('SELECT state_id, state_name FROM state')).mappings().all()
             state_id_map = {str(row['state_name']).strip(): int(row['state_id']) for row in state_rows}
 
-            lga_count = db.session.execute(text('SELECT COUNT(*) FROM lga')).scalar() or 0
-            if int(lga_count) == 0:
-                for state_name, lgas in SEED_LGAS_BY_STATE.items():
-                    state_id = state_id_map.get(state_name)
-                    if not state_id:
+            # Insert only missing LGAs for each state; never duplicate existing state/LGA pairs.
+            for state_name, lgas in SEED_LGAS_BY_STATE.items():
+                state_id = state_id_map.get(state_name)
+                if not state_id:
+                    continue
+
+                for lga_name in lgas:
+                    clean_lga = (lga_name or '').strip()
+                    if not clean_lga:
                         continue
-                    for lga_name in lgas:
-                        db.session.execute(
-                            text('INSERT INTO lga (lga_name, lga_stateid) VALUES (:lga_name, :state_id)'),
-                            {'lga_name': lga_name, 'state_id': state_id},
-                        )
-                db.session.commit()
+
+                    db.session.execute(
+                        text(
+                            '''INSERT INTO lga (lga_name, lga_stateid)
+                               SELECT :lga_name, :state_id
+                               WHERE NOT EXISTS (
+                                   SELECT 1
+                                   FROM lga
+                                   WHERE lga_stateid = :state_id
+                                     AND LOWER(TRIM(lga_name)) = LOWER(TRIM(:lga_name))
+                               )'''
+                        ),
+                        {'lga_name': clean_lga, 'state_id': state_id},
+                    )
+            db.session.commit()
 
             lga_indexes = {idx.get('name') for idx in inspector.get_indexes('lga')}
             if 'lga_stateid_idx' not in lga_indexes:

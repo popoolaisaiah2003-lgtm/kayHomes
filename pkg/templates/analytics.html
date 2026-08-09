@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics Dashboard - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="kh-content-container py-4 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <p class="text-uppercase text-muted small mb-1 fw-semibold">Dashboard</p>
+      <h2 class="fw-bold mb-1">Analytics Dashboard</h2>
+      <p class="text-muted mb-0">Performance insights for your listings over the last 7 days.</p>
+    </div>
+    <a href="{{ url_for('my_listings') }}" class="btn btn-outline-primary">
+      <i class="bi bi-house-door me-2"></i>Manage Listings
+    </a>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Views</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.total_views }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Inquiries</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.total_inquiries }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Favorites</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.total_favorites }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Total Reviews</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.total_reviews }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Active Listings</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.active_listings }}</h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted d-block">Rented Listings</small>
+          <h4 class="mb-0 fw-bold">{{ metrics.rented_listings }}</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">7-Day Activity Trends</h5>
+          <div style="height: 320px;">
+            <canvas id="analyticsTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3">Top Performing Property</h5>
+          {% if top_property %}
+            <p class="mb-2 fw-semibold">{{ top_property.prop_title }}</p>
+            <p class="text-muted mb-3">Views: <strong>{{ top_property.views }}</strong></p>
+            <a href="{{ top_property.detail_url }}" class="btn btn-sm btn-outline-primary">View Property</a>
+          {% else %}
+            <div class="text-muted">No listing performance data available yet.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const analyticsPayload = {{ chart_data|tojson }};
+  const trendCtx = document.getElementById('analyticsTrendChart');
+
+  if (trendCtx) {
+    new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: analyticsPayload.labels,
+        datasets: [
+          {
+            label: 'Views',
+            data: analyticsPayload.daily_views,
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.12)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 3,
+          },
+          {
+            label: 'Inquiries',
+            data: analyticsPayload.daily_inquiries,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.10)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 3,
+          },
+          {
+            label: 'Favorites',
+            data: analyticsPayload.daily_favorites,
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.10)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 3,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            position: 'top'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

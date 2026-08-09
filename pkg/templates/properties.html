@@ -27,7 +27,7 @@
             {% set all_active = selected_category_id is none %}
             <li>
               <a
-                href="{{ url_for('properties', category_id=None, q=(search_query if search_query else None)) }}"
+                href="{{ url_for('properties', category_id=None, q=(filters['q'] if filters['q'] else None), status=(filters['status'] if filters['status'] else None), state=(filters['state'] if filters['state'] else None), lga=(filters['lga'] if filters['lga'] else None), property_type=(filters['property_type'] if filters['property_type'] else None), bedrooms=filters['bedrooms'], bathrooms=filters['bathrooms'], min_price=filters['min_price'], max_price=filters['max_price'], furnished=(filters['furnished_raw'] if filters['furnished_raw'] else None), sort=(filters['sort'] if filters['sort'] else None)) }}"
                 class="category-link {% if all_active %}active{% endif %}"
               >
                 {% if all_active %}<i class="bi bi-check2 me-2"></i>{% endif %}All Rentals ({{ all_rentals_count }})
@@ -38,7 +38,7 @@
               {% set is_active = selected_category_id == category.cat_id %}
               <li>
                 <a
-                  href="{{ url_for('properties', category_id=category.cat_id, q=(search_query if search_query else None)) }}"
+                  href="{{ url_for('properties', category_id=category.cat_id, q=(filters['q'] if filters['q'] else None), status=(filters['status'] if filters['status'] else None), state=(filters['state'] if filters['state'] else None), lga=(filters['lga'] if filters['lga'] else None), property_type=(filters['property_type'] if filters['property_type'] else None), bedrooms=filters['bedrooms'], bathrooms=filters['bathrooms'], min_price=filters['min_price'], max_price=filters['max_price'], furnished=(filters['furnished_raw'] if filters['furnished_raw'] else None), sort=(filters['sort'] if filters['sort'] else None)) }}"
                   class="category-link {% if is_active %}active{% endif %}"
                 >
                   {% if is_active %}<i class="bi bi-check2 me-2"></i>{% endif %}{{ category.cat_name }} ({{ category_counts.get(category.cat_id, 0) }})
@@ -51,34 +51,149 @@
 
       <div class="property-content">
         <div class="row align-items-center mb-4 g-3">
-          <div class="col-12 col-md-8">
-            <form method="GET" action="{{ url_for('properties') }}" class="d-flex flex-column flex-sm-row gap-2">
-              <input type="text" name="q" class="form-control" value="{{ search_query }}" placeholder="Search by location, title, or type...">
-              {% if selected_category_id is not none %}
-                <input type="hidden" name="category_id" value="{{ selected_category_id }}">
-              {% endif %}
-              <button type="submit" class="btn btn-primary px-4">Search</button>
-            </form>
+          <div class="col-12">
+            <div class="card border-0 shadow-sm">
+              <div class="card-body">
+                <form method="GET" action="{{ url_for('properties') }}" class="row g-3 align-items-end">
+                  {% if selected_category_id is not none %}
+                    <input type="hidden" name="category_id" value="{{ selected_category_id }}">
+                  {% endif %}
+
+                  <div class="col-12 col-lg-4">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text" name="q" class="form-control" value="{{ filters['q'] }}" placeholder="Title, location, state or LGA">
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">State</label>
+                    <select id="filterState" name="state" class="form-select">
+                      <option value="">All states</option>
+                      {% for state in states %}
+                        <option value="{{ state.state_name }}" {% if filters['state'] == state.state_name %}selected{% endif %}>{{ state.state_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                      <option value="" {% if not filters['status'] %}selected{% endif %}>Any</option>
+                      <option value="available" {% if filters['status'] == 'available' %}selected{% endif %}>Available</option>
+                      <option value="pending" {% if filters['status'] == 'pending' %}selected{% endif %}>Pending</option>
+                      <option value="rented" {% if filters['status'] == 'rented' %}selected{% endif %}>Rented</option>
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">LGA</label>
+                    <select id="filterLga" name="lga" class="form-select" data-selected-lga="{{ filters['lga'] }}">
+                      <option value="">All LGAs</option>
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Type</label>
+                    <select name="property_type" class="form-select">
+                      <option value="">All types</option>
+                      {% for category in categories %}
+                        <option value="{{ category.cat_name }}" {% if filters['property_type'] == category.cat_name %}selected{% endif %}>{{ category.cat_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Furnished</label>
+                    <select name="furnished" class="form-select">
+                      <option value="" {% if not filters['furnished_raw'] %}selected{% endif %}>Any</option>
+                      <option value="yes" {% if filters['furnished_raw']|lower in ['yes', 'true', '1'] %}selected{% endif %}>Yes</option>
+                      <option value="no" {% if filters['furnished_raw']|lower in ['no', 'false', '0'] %}selected{% endif %}>No</option>
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Bedrooms</label>
+                    <select name="bedrooms" class="form-select">
+                      <option value="">Any</option>
+                      {% for n in range(1, 11) %}
+                        <option value="{{ n }}" {% if filters['bedrooms'] == n %}selected{% endif %}>{{ n }}+</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Bathrooms</label>
+                    <select name="bathrooms" class="form-select">
+                      <option value="">Any</option>
+                      {% for n in range(1, 11) %}
+                        <option value="{{ n }}" {% if filters['bathrooms'] == n %}selected{% endif %}>{{ n }}+</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Min Price</label>
+                    <input type="number" min="0" step="1" name="min_price" class="form-control" value="{{ filters['min_price'] if filters['min_price'] is not none else '' }}" placeholder="0">
+                  </div>
+
+                  <div class="col-6 col-lg-2">
+                    <label class="form-label fw-semibold">Max Price</label>
+                    <input type="number" min="0" step="1" name="max_price" class="form-control" value="{{ filters['max_price'] if filters['max_price'] is not none else '' }}" placeholder="5000000">
+                  </div>
+
+                  <div class="col-12 col-lg-3">
+                    <label class="form-label fw-semibold">Sort</label>
+                    <select name="sort" class="form-select">
+                      <option value="newest" {% if filters['sort'] == 'newest' %}selected{% endif %}>Newest</option>
+                      <option value="oldest" {% if filters['sort'] == 'oldest' %}selected{% endif %}>Oldest</option>
+                      <option value="price_low" {% if filters['sort'] == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                      <option value="price_high" {% if filters['sort'] == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                    </select>
+                  </div>
+
+                  <div class="col-12 col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-2"></i>Apply Filters</button>
+                    <a href="{{ url_for('properties') }}" class="btn btn-outline-secondary w-100">Reset</a>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
-          <div class="col-12 col-md-4">
+
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="small text-muted">Showing <strong class="text-dark">{{ result_count }}</strong> matching result{% if result_count != 1 %}s{% endif %}</div>
+          </div>
+
+          <div class="col-12 col-md-6 col-lg-4">
             <a href="{{ url_for('post_property') }}" class="btn btn-add-property w-100">+ Add Property</a>
           </div>
 
-          {% if selected_category_id is not none or search_query %}
+          {% if session.get('user_id') %}
+            <div class="col-12 col-md-6 col-lg-4">
+              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+                <i class="bi bi-bookmark-plus me-2"></i>Save Search
+              </button>
+            </div>
+          {% endif %}
+
+          {% if selected_category_id is not none or filters['q'] or filters['status'] or filters['state'] or filters['lga'] or filters['property_type'] or filters['bedrooms'] is not none or filters['bathrooms'] is not none or filters['min_price'] is not none or filters['max_price'] is not none or filters['furnished_raw'] or (filters['sort'] and filters['sort'] != 'newest') %}
             <div class="col-12">
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="small text-muted">Showing:</span>
                 <span class="badge theme-badge-soft border">{{ selected_category }}</span>
-                {% if search_query %}
-                  <span class="badge theme-badge-soft border">Search: {{ search_query }}</span>
+                {% if filters['q'] %}
+                  <span class="badge theme-badge-soft border">Search: {{ filters['q'] }}</span>
                 {% endif %}
+                {% if filters['status'] %}<span class="badge theme-badge-soft border">Status: {{ filters['status']|capitalize }}</span>{% endif %}
+                {% if filters['state'] %}<span class="badge theme-badge-soft border">State: {{ filters['state'] }}</span>{% endif %}
+                {% if filters['lga'] %}<span class="badge theme-badge-soft border">LGA: {{ filters['lga'] }}</span>{% endif %}
+                {% if filters['property_type'] %}<span class="badge theme-badge-soft border">Type: {{ filters['property_type'] }}</span>{% endif %}
                 <a href="{{ url_for('properties') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a>
               </div>
             </div>
           {% endif %}
         </div>
 
-        <div id="propertyResults" class="row g-4 property-results fade-up" data-properties-feed data-poll-url="{{ url_for('properties_updates_api') }}" data-before-id="{{ properties[0]['prop_id'] if properties else 0 }}" data-category-id="{{ selected_category_id if selected_category_id is not none else '' }}" data-search-query="{{ search_query }}" data-post-login-history-fix="{{ 'true' if post_login_history_fix else 'false' }}" data-home-url="{{ url_for('home') }}">
+        <div id="propertyResults" class="row g-4 property-results fade-up" data-properties-feed data-poll-url="{{ url_for('properties_updates_api') }}" data-before-id="{{ properties[0]['prop_id'] if properties else 0 }}" data-category-id="{{ selected_category_id if selected_category_id is not none else '' }}" data-search-query="{{ filters['q'] }}" data-status="{{ filters['status'] }}" data-state="{{ filters['state'] }}" data-lga="{{ filters['lga'] }}" data-property-type="{{ filters['property_type'] }}" data-bedrooms="{{ filters['bedrooms'] if filters['bedrooms'] is not none else '' }}" data-bathrooms="{{ filters['bathrooms'] if filters['bathrooms'] is not none else '' }}" data-min-price="{{ filters['min_price'] if filters['min_price'] is not none else '' }}" data-max-price="{{ filters['max_price'] if filters['max_price'] is not none else '' }}" data-furnished="{{ filters['furnished_raw'] }}" data-sort="{{ filters['sort'] }}" data-post-login-history-fix="{{ 'true' if post_login_history_fix else 'false' }}" data-home-url="{{ url_for('home') }}">
           {% if properties %}
             {% for prop in properties %}
               <div class="col-sm-12 col-md-6 col-lg-4" data-property-id="{{ prop['prop_id'] }}">
@@ -91,7 +206,10 @@
                   <div class="card-body d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
                       <h5 class="card-title mb-0">{{ prop['prop_title'] }}</h5>
-                      <span class="badge bg-success-subtle text-success">{{ prop.get('listing_type') or 'Active' }}</span>
+                      <span class="badge {{ prop.get('status_badge_class') }}">{{ prop.get('status_label') or 'Available' }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 small text-muted mb-2">
+                      <span><i class="bi bi-eye me-1"></i>{{ prop.get('prop_views', 0) }} view{% if prop.get('prop_views', 0) != 1 %}s{% endif %}</span>
                     </div>
                     <p class="card-text text-muted mb-2">{{ prop['prop_location'] }}{% if prop.get('prop_state') %} - {{ prop['prop_state'] }}{% endif %}</p>
                     <p class="card-text mb-2"><strong>Type:</strong> {{ prop.get('prop_type') or 'Property' }}</p>
@@ -113,10 +231,10 @@
           {% else %}
             <div class="col-12">
               <div class="empty-state-box">
-                <i class="bi bi-house-door empty-state-icon"></i>
-                <h4 class="mb-2">{{ empty_message or 'No properties listed in this category.' }}</h4>
-                <p class="text-muted mb-3">{{ empty_subtext or 'Be the first to post one.' }}</p>
-                <a href="{{ url_for('post_property') }}" class="btn btn-primary">Post a Property</a>
+                <i class="bi bi-search empty-state-icon"></i>
+                <h4 class="mb-2">No properties found</h4>
+                <p class="text-muted mb-3">Try adjusting your filters or reset to view all listings.</p>
+                <a href="{{ url_for('properties') }}" class="btn btn-outline-primary">Reset Filters</a>
               </div>
             </div>
           {% endif %}
@@ -124,6 +242,44 @@
       </div>
     </div>
   </div>
+
+  {% if session.get('user_id') %}
+    <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <form method="post" action="{{ url_for('save_search') }}">
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold" id="saveSearchModalLabel">Save Search</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small mb-3">Give this search a name so you can run it again later.</p>
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="savedSearchName">Search name</label>
+                <input type="text" class="form-control" id="savedSearchName" name="name" placeholder="2 Bedroom Ikeja under 2M" maxlength="150" required>
+              </div>
+
+              <input type="hidden" name="q" value="{{ filters['q'] }}">
+              <input type="hidden" name="status" value="{{ filters['status'] }}">
+              <input type="hidden" name="state" value="{{ filters['state'] }}">
+              <input type="hidden" name="lga" value="{{ filters['lga'] }}">
+              <input type="hidden" name="property_type" value="{{ filters['property_type'] }}">
+              <input type="hidden" name="bedrooms" value="{{ filters['bedrooms'] if filters['bedrooms'] is not none else '' }}">
+              <input type="hidden" name="bathrooms" value="{{ filters['bathrooms'] if filters['bathrooms'] is not none else '' }}">
+              <input type="hidden" name="min_price" value="{{ filters['min_price'] if filters['min_price'] is not none else '' }}">
+              <input type="hidden" name="max_price" value="{{ filters['max_price'] if filters['max_price'] is not none else '' }}">
+              <input type="hidden" name="furnished" value="{{ filters['furnished_raw'] }}">
+              <input type="hidden" name="sort" value="{{ filters['sort'] }}">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-bookmark-check me-2"></i>Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
   <script>
     const propertyResultsFeed = document.getElementById('propertyResults');
@@ -193,6 +349,38 @@
         }
       });
     });
+
+    const lgaMap = {{ state_lga_map|tojson }};
+    const filterStateEl = document.getElementById('filterState');
+    const filterLgaEl = document.getElementById('filterLga');
+
+    function populateFilterLgas(stateName) {
+      if (!filterLgaEl) return;
+
+      const selectedLga = filterLgaEl.dataset.selectedLga || '';
+      filterLgaEl.innerHTML = '<option value="">All LGAs</option>';
+      if (!stateName || !lgaMap[stateName]) {
+        return;
+      }
+
+      lgaMap[stateName].forEach((lga) => {
+        const option = document.createElement('option');
+        option.value = lga;
+        option.textContent = lga;
+        if (selectedLga === lga) {
+          option.selected = true;
+        }
+        filterLgaEl.appendChild(option);
+      });
+    }
+
+    if (filterStateEl && filterLgaEl) {
+      populateFilterLgas(filterStateEl.value);
+      filterStateEl.addEventListener('change', () => {
+        filterLgaEl.dataset.selectedLga = '';
+        populateFilterLgas(filterStateEl.value);
+      });
+    }
   </script>
 
 

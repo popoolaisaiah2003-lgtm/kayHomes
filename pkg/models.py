@@ -13,6 +13,8 @@ class User(db.Model):
     user_email = db.Column(db.String(120), unique=True, nullable=False)
     user_pwd = db.Column(db.String(255), nullable=False)
     user_phone = db.Column(db.String(20))
+    user_avatar = db.Column(db.String(255), nullable=True)
+    user_verified = db.Column(db.Boolean, nullable=False, default=False)
     theme = db.Column(db.String(20), nullable=False, default='light')
     user_regdate = db.Column(db.DateTime)
 
@@ -72,6 +74,8 @@ class Property(db.Model):
     prop_title = db.Column(db.String(255), nullable=False)
     prop_type = db.Column(db.String(120), nullable=False)
     listing_type = db.Column(db.String(120))
+    prop_status = db.Column(db.String(20), nullable=False, default='available')
+    prop_views = db.Column(db.Integer, nullable=False, default=0)
     prop_desc = db.Column(db.Text, nullable=False)
     prop_price = db.Column(db.String(120), nullable=False)
     prop_location = db.Column(db.String(255), nullable=False)
@@ -99,6 +103,38 @@ class Favorite(db.Model):
     fav_id = db.Column(db.Integer, primary_key=True)
     fav_userid = db.Column(db.Integer, db.ForeignKey('users.user_id'))
     fav_propid = db.Column(db.Integer, db.ForeignKey('property.prop_id'))
+
+
+class SavedSearch(db.Model):
+    __tablename__ = 'saved_searches'
+
+    search_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False, index=True)
+    name = db.Column(db.String(150), nullable=False)
+    q = db.Column(db.String(255))
+    state = db.Column(db.String(120))
+    lga = db.Column(db.String(120))
+    property_type = db.Column(db.String(120))
+    bedrooms = db.Column(db.Integer)
+    bathrooms = db.Column(db.Integer)
+    min_price = db.Column(db.Integer)
+    max_price = db.Column(db.Integer)
+    furnished = db.Column(db.String(20))
+    sort = db.Column(db.String(20))
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
+
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+
+    notification_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False, index=True)
+    type = db.Column(db.String(40), nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    message = db.Column(db.String(255), nullable=False)
+    link = db.Column(db.String(255))
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=db.func.now(), index=True)
 
 
 class ContactMessage(db.Model):

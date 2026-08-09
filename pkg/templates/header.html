@@ -47,6 +47,12 @@
                   <a class="nav-link {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">Favorites</a>
                 </li>
                 <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}">Saved Searches</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">Analytics</a>
+                </li>
+                <li class="nav-item">
                   <a class="nav-link {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">Dashboard</a>
                 </li>
                 <li class="nav-item">
@@ -57,6 +63,37 @@
                     <i class="bi bi-chat-left-text me-1"></i> Messages
                     <span id="navMessagesBadge" class="badge bg-danger ms-1 {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
                   </a>
+                </li>
+                <li class="nav-item dropdown ms-lg-1">
+                  <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                    <i class="bi bi-bell fs-5"></i>
+                    {% if notification_unread_count and notification_unread_count > 0 %}
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notification_unread_count }}</span>
+                    {% endif %}
+                  </a>
+                  <div class="dropdown-menu dropdown-menu-end p-0 shadow-sm" style="min-width: 340px; max-width: 360px;">
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+                      <h6 class="mb-0 fw-bold">Notifications</h6>
+                      <a href="{{ url_for('notifications') }}" class="small text-decoration-none">View all</a>
+                    </div>
+                    <div class="list-group list-group-flush" style="max-height: 360px; overflow-y: auto;">
+                      {% if latest_notifications %}
+                        {% for item in latest_notifications %}
+                          <a href="{{ item.link or url_for('notifications') }}" class="list-group-item list-group-item-action py-2 {% if not item.is_read %}bg-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between align-items-start gap-2">
+                              <div>
+                                <div class="fw-semibold small mb-1">{{ item.title }}</div>
+                                <div class="text-muted small">{{ item.message }}</div>
+                              </div>
+                              <small class="text-muted text-nowrap">{{ item.created_at_display }}</small>
+                            </div>
+                          </a>
+                        {% endfor %}
+                      {% else %}
+                        <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
+                      {% endif %}
+                    </div>
+                  </div>
                 </li>
                 <li class="nav-item dropdown ms-lg-2">
                   <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -375,8 +375,9 @@
             '<div class="card-body d-flex flex-column">' +
               '<div class="d-flex justify-content-between align-items-start mb-2 gap-2">' +
                 '<h5 class="card-title mb-0">' + escapeHtml(property.prop_title) + '</h5>' +
-                '<span class="badge bg-success-subtle text-success">' + escapeHtml(property.listing_type || 'Active') + '</span>' +
+                '<span class="badge ' + escapeHtml(property.status_badge_class || 'bg-success-subtle text-success border border-success-subtle') + '">' + escapeHtml(property.status_label || 'Available') + '</span>' +
               '</div>' +
+              '<p class="small text-muted mb-2"><i class="bi bi-eye me-1"></i>' + escapeHtml(String(property.prop_views || 0)) + ' view' + (Number(property.prop_views || 0) === 1 ? '' : 's') + '</p>' +
               '<p class="card-text text-muted mb-2">' + escapeHtml(property.prop_location || '') + (property.prop_state ? ' - ' + escapeHtml(property.prop_state) : '') + '</p>' +
               '<p class="card-text mb-2"><strong>Type:</strong> ' + escapeHtml(property.prop_type || 'Property') + '</p>' +
               '<p class="card-text mb-3">' + escapeHtml(property.short_desc || '') + '</p>' +
@@ -396,6 +397,36 @@
       }
       if (feed.dataset.searchQuery) {
         url.searchParams.set('q', feed.dataset.searchQuery);
+      }
+      if (feed.dataset.status) {
+        url.searchParams.set('status', feed.dataset.status);
+      }
+      if (feed.dataset.state) {
+        url.searchParams.set('state', feed.dataset.state);
+      }
+      if (feed.dataset.lga) {
+        url.searchParams.set('lga', feed.dataset.lga);
+      }
+      if (feed.dataset.propertyType) {
+        url.searchParams.set('property_type', feed.dataset.propertyType);
+      }
+      if (feed.dataset.bedrooms) {
+        url.searchParams.set('bedrooms', feed.dataset.bedrooms);
+      }
+      if (feed.dataset.bathrooms) {
+        url.searchParams.set('bathrooms', feed.dataset.bathrooms);
+      }
+      if (feed.dataset.minPrice) {
+        url.searchParams.set('min_price', feed.dataset.minPrice);
+      }
+      if (feed.dataset.maxPrice) {
+        url.searchParams.set('max_price', feed.dataset.maxPrice);
+      }
+      if (feed.dataset.furnished) {
+        url.searchParams.set('furnished', feed.dataset.furnished);
+      }
+      if (feed.dataset.sort) {
+        url.searchParams.set('sort', feed.dataset.sort);
       }
 
       return fetchJson(url.toString()).then(function (payload) {
@@ -450,11 +481,20 @@
                 '<div class="card-body d-flex flex-column h-100">' +
                   '<div class="d-flex justify-content-between align-items-start gap-2">' +
                     '<div><h5 class="fw-bold mb-1">' + escapeHtml(listing.prop_title) + '</h5><p class="text-muted small mb-2">' + escapeHtml(listing.prop_location || '') + '</p></div>' +
-                    '<span class="badge bg-success-subtle text-success">' + escapeHtml(listing.listing_type || 'Active') + '</span>' +
+                    '<span class="badge ' + escapeHtml(listing.status_badge_class || 'bg-success-subtle text-success border border-success-subtle') + '">' + escapeHtml(listing.status_label || 'Available') + '</span>' +
                   '</div>' +
                   '<p class="fw-semibold text-primary mb-3">' + escapeHtml(listing.prop_price_display || '') + '</p>' +
+                  '<p class="small text-muted mb-2"><i class="bi bi-eye me-1"></i>' + escapeHtml(String(listing.prop_views || 0)) + ' view' + (Number(listing.prop_views || 0) === 1 ? '' : 's') + '</p>' +
+                  '<form method="post" action="' + escapeHtml(listing.status_update_url || '') + '" class="d-flex gap-2 align-items-center mb-3">' +
+                    '<select name="prop_status" class="form-select form-select-sm" style="max-width: 150px;">' +
+                      '<option value="available"' + (listing.prop_status === 'available' ? ' selected' : '') + '>Available</option>' +
+                      '<option value="pending"' + (listing.prop_status === 'pending' ? ' selected' : '') + '>Pending</option>' +
+                      '<option value="rented"' + (listing.prop_status === 'rented' ? ' selected' : '') + '>Rented</option>' +
+                    '</select>' +
+                    '<button type="submit" class="btn btn-outline-secondary btn-sm">Update</button>' +
+                  '</form>' +
                   '<div class="small text-muted mb-3">' +
-                    '<div class="d-flex justify-content-between py-1"><span>Status</span><strong>Active</strong></div>' +
+                    '<div class="d-flex justify-content-between py-1"><span>Status</span><strong>' + escapeHtml(listing.status_label || 'Available') + '</strong></div>' +
                     '<div class="d-flex justify-content-between py-1"><span>Inquiries</span><strong>' + escapeHtml(String(listing.inquiry_count || 0)) + '</strong></div>' +
                     '<div class="d-flex justify-content-between py-1"><span>Posted</span><strong>' + escapeHtml(listing.created_at || 'Recently posted') + '</strong></div>' +
                   '</div>' +

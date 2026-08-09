@@ -49,7 +49,7 @@
               <ul class="dropdown-menu shadow-sm">
                 <li><a class="dropdown-item" href="{{ url_for('user_dashboard') }}">User Dashboard</a></li>
                 <li><a class="dropdown-item" href="#">My Favorites</a></li>
-                <li><a class="dropdown-item" href="#">Saved Search</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('saved_searches') }}">Saved Searches</a></li>
                 <li><a class="dropdown-item" href="{{ url_for('user_dashboard') }}">Account Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-danger" href="{{ url_for('login') }}">Sign Out</a></li>

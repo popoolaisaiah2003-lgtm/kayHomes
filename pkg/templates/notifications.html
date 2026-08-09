@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - KayHomes{% endblock %}
+
+{% block main_content %}
+<div class="kh-content-container py-4 fade-up">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1">Notifications</h2>
+      <p class="text-muted mb-0">Stay updated on reviews, inquiries, favorites, and saved search activity.</p>
+    </div>
+    <form method="post" action="{{ url_for('mark_all_notifications_read') }}">
+      <button type="submit" class="btn btn-outline-primary">
+        <i class="bi bi-check2-all me-2"></i>Mark all as read
+      </button>
+    </form>
+  </div>
+
+  {% if notifications %}
+    <div class="card border-0 shadow-sm">
+      <div class="list-group list-group-flush">
+        {% for item in notifications %}
+          <div class="list-group-item py-3 {% if not item.is_read %}bg-light{% endif %}">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+              <div>
+                <h6 class="mb-1 fw-semibold">{{ item.title }}</h6>
+                <p class="text-muted mb-2">{{ item.message }}</p>
+                <small class="text-muted">{{ item.created_at_display }}</small>
+              </div>
+              <div class="d-flex align-items-start gap-2">
+                {% if item.link %}
+                  <a href="{{ item.link }}" class="btn btn-sm btn-outline-secondary">Open</a>
+                {% endif %}
+                {% if not item.is_read %}
+                  <form method="post" action="{{ url_for('mark_notification_read', notification_id=item.notification_id) }}">
+                    <button type="submit" class="btn btn-sm btn-primary">Mark read</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="empty-state-box text-center py-5">
+      <i class="bi bi-bell empty-state-icon"></i>
+      <h4 class="mb-2">No notifications yet</h4>
+      <p class="text-muted mb-3">When activity happens on your listings and searches, it will appear here.</p>
+      <a href="{{ url_for('properties') }}" class="btn btn-primary">Browse Properties</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

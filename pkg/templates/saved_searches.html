@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Searches - KayHomes{% endblock %}
+
+{% block main_content %}
+  <div class="kh-content-container py-4 fade-up">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div>
+        <p class="text-uppercase text-muted small mb-1 fw-semibold">Dashboard</p>
+        <h2 class="mb-1 fw-bold">Saved Searches</h2>
+        <p class="text-muted mb-0">Revisit your filter combinations with one click.</p>
+      </div>
+      <a href="{{ url_for('properties') }}" class="btn btn-outline-primary">
+        <i class="bi bi-search me-2"></i>Browse Properties
+      </a>
+    </div>
+
+    {% if saved_searches %}
+      <div class="row g-4">
+        {% for search in saved_searches %}
+          <div class="col-12 col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                  <div>
+                    <h5 class="card-title mb-1 fw-bold">{{ search.name }}</h5>
+                    <p class="text-muted small mb-0">Saved {{ search.created_at_display }}</p>
+                  </div>
+                  <span class="badge bg-light text-dark border">Search</span>
+                </div>
+
+                {% if search.query_summary %}
+                  <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% for item in search.query_summary %}
+                      <span class="badge theme-badge-soft border">{{ item }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-muted small mb-3">This search uses your current default property filters.</p>
+                {% endif %}
+
+                <div class="mt-auto d-flex gap-2 flex-wrap">
+                  <a href="{{ search.run_url }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Run Search
+                  </a>
+                  <form method="post" action="{{ search.delete_url }}" class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this saved search?');">
+                      <i class="bi bi-trash me-1"></i>Delete
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state-box text-center py-5">
+        <i class="bi bi-bookmark-star empty-state-icon"></i>
+        <h4 class="mb-2">No saved searches yet</h4>
+        <p class="text-muted mb-4">Save a filter combination from the properties page and it will appear here.</p>
+        <a href="{{ url_for('properties') }}" class="btn btn-primary">Start Searching</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

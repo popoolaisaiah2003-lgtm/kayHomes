@@ -1802,6 +1802,11 @@ def _apply_properties_filters(query, filters, selected_category_obj=None):
     status_value = (filters.get('status') or '').strip().lower()
     if status_value:
         query = query.filter(func.lower(func.coalesce(Property.prop_status, 'available')) == status_value)
+    else:
+        query = query.filter(
+            (Property.prop_status == 'available') |
+            (Property.prop_status.is_(None))
+        )
 
     state_value = filters.get('state') or ''
     if state_value:
@@ -2224,14 +2229,9 @@ def properties():
     try:
         base_query = Property.query.options(joinedload(Property.category))
         query = _apply_properties_filters(base_query, filters, selected_category_obj=selected_category_obj)
-        total_matches = query.count()
-        pagination = _build_pagination(total_matches, page, 12)
-        property_rows = (
-            query
-            .offset((pagination.page - 1) * pagination.per_page)
-            .limit(pagination.per_page)
-            .all()
-        )
+        pagination = query.paginate(page=page, per_page=12, error_out=False)
+        property_rows = pagination.items
+        total_matches = pagination.total
     except Exception:
         property_rows = []
         total_matches = 0

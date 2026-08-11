@@ -676,7 +676,7 @@ def admin_login():
             flash('Please enter your username and password.', 'warning')
             return redirect(url_for('admin_login'))
 
-        admin = Admin.query.filter_by(username=username).first()
+        admin = Admin.query.filter(or_(Admin.username == username, Admin.email == username)).first()
         if not admin:
             flash('Invalid username or password.', 'danger')
             return redirect(url_for('admin_login'))

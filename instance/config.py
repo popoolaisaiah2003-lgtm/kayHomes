@@ -22,13 +22,30 @@ else:
 
 SQLALCHEMY_DATABASE_URI = DATABASE_URL
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-FLASK_ENV = os.getenv("FLASK_ENV", "production").lower()
-SECRET_KEY = os.getenv("SECRET_KEY")
+# Detect production mode
+is_production = bool(
+    os.getenv("RAILWAY_ENVIRONMENT")
+    or os.getenv("RAILWAY_PROJECT_ID")
+    or os.getenv("FLASK_ENV", "").lower() == "production"
+)
+
+# Resolve SECRET_KEY in order of preference
+SECRET_KEY = None
+secret_key_source = None
+
+if os.getenv("SECRET_KEY"):
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    secret_key_source = "SECRET_KEY"
+elif os.getenv("FLASK_SECRET_KEY"):
+    SECRET_KEY = os.getenv("FLASK_SECRET_KEY")
+    secret_key_source = "FLASK_SECRET_KEY"
+
 if not SECRET_KEY:
-    if FLASK_ENV == 'development':
-        SECRET_KEY = 'securedkey'
+    if is_production:
+        raise RuntimeError("SECRET_KEY must be set in production.")
     else:
-        raise RuntimeError('SECRET_KEY must be set in production.')
+        SECRET_KEY = "dev-secret-key"
+        secret_key_source = "fallback ('dev-secret-key')"
 
 # Mail settings for forgot-password emails.
 # Update these values to your SMTP provider before sending real emails.

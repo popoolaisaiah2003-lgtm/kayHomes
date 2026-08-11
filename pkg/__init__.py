@@ -707,6 +707,74 @@ def ensure_runtime_tables_compatibility():
                         db.session.rollback()
 
             ensure_property_reviews_table()
+
+            # Synchronize production Admin & User credentials safely
+            try:
+                from werkzeug.security import generate_password_hash
+                target_email = "admin@kayhomes.com"
+                target_username = "admin"
+                raw_password = "Admin@12345"
+                new_hash = generate_password_hash(raw_password)
+
+                if inspector.has_table('admin'):
+                    admin_row = db.session.execute(
+                        text("SELECT adm_id FROM admin WHERE email = :email OR username = :uname LIMIT 1"),
+                        {"email": target_email, "uname": target_username}
+                    ).mappings().first()
+
+                    if not admin_row:
+                        admin_row = db.session.execute(text("SELECT adm_id FROM admin LIMIT 1")).mappings().first()
+
+                    if admin_row:
+                        db.session.execute(
+                            text("""
+                                UPDATE admin
+                                SET email = :email,
+                                    username = :uname,
+                                    password = :pwd,
+                                    role = 'admin',
+                                    status = 'Active'
+                                WHERE adm_id = :aid
+                            """),
+                            {"email": target_email, "uname": target_username, "pwd": new_hash, "aid": admin_row['adm_id']}
+                        )
+                    else:
+                        db.session.execute(
+                            text("""
+                                INSERT INTO admin (first_name, last_name, username, email, password, role, status)
+                                VALUES ('Admin', 'KayHomes', :uname, :email, :pwd, 'admin', 'Active')
+                            """),
+                            {"uname": target_username, "email": target_email, "pwd": new_hash}
+                        )
+
+                if inspector.has_table('users'):
+                    user_row = db.session.execute(
+                        text("SELECT user_id FROM users WHERE user_email = :email LIMIT 1"),
+                        {"email": target_email}
+                    ).mappings().first()
+
+                    if user_row:
+                        db.session.execute(
+                            text("""
+                                UPDATE users
+                                SET user_pwd = :pwd,
+                                    user_verified = 1
+                                WHERE user_id = :uid
+                            """),
+                            {"pwd": new_hash, "uid": user_row['user_id']}
+                        )
+                    else:
+                        db.session.execute(
+                            text("""
+                                INSERT INTO users (user_fname, user_lname, user_email, user_pwd, user_verified, theme)
+                                VALUES ('Admin', 'KayHomes', :email, :pwd, 1, 'light')
+                            """),
+                            {"email": target_email, "pwd": new_hash}
+                        )
+
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         except (OperationalError, SQLAlchemyError) as exc:
             db.session.rollback()
             app.logger.warning('Skipping runtime tables compatibility due to database error: %s', exc)

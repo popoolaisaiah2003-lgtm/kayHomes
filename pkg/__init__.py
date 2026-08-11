@@ -710,10 +710,10 @@ def ensure_runtime_tables_compatibility():
 
             # Synchronize production Admin & User credentials safely
             try:
-                from werkzeug.security import generate_password_hash
+                from werkzeug.security import generate_password_hash, check_password_hash
                 target_email = "admin@kayhomes.com"
                 target_username = "admin"
-                raw_password = "Admin@12345"
+                raw_password = "KayHomes@2026!Secure"
                 new_hash = generate_password_hash(raw_password)
 
                 if inspector.has_table('admin'):
@@ -773,6 +773,15 @@ def ensure_runtime_tables_compatibility():
                         )
 
                 db.session.commit()
+
+                # Verify updated stored password hash
+                check_row = db.session.execute(
+                    text("SELECT username, email, status, password FROM admin WHERE username = :uname LIMIT 1"),
+                    {"uname": target_username}
+                ).mappings().first()
+                if check_row:
+                    is_valid = check_password_hash(check_row['password'], raw_password)
+                    print(f"[ADMIN PWD RESET] username: {check_row['username']} | email: {check_row['email']} | status: {check_row['status']} | password verification: {is_valid}")
             except Exception:
                 db.session.rollback()
         except (OperationalError, SQLAlchemyError) as exc:

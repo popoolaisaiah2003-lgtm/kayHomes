@@ -271,30 +271,48 @@ def ensure_property_specs_schema():
 
         columns = {col['name'] for col in inspector.get_columns('property')}
         required = {
+            'prop_bedroom': 'ALTER TABLE property ADD COLUMN prop_bedroom INT NULL',
+            'prop_bathroom': 'ALTER TABLE property ADD COLUMN prop_bathroom INT NULL',
+            'prop_toilet': 'ALTER TABLE property ADD COLUMN prop_toilet INT NULL',
+            'prop_area': 'ALTER TABLE property ADD COLUMN prop_area INT NULL',
+            'prop_area_unit': "ALTER TABLE property ADD COLUMN prop_area_unit VARCHAR(20) NULL DEFAULT 'sqm'",
             'bedrooms': 'ALTER TABLE property ADD COLUMN bedrooms INT NULL',
             'bathrooms': 'ALTER TABLE property ADD COLUMN bathrooms INT NULL',
             'toilets': 'ALTER TABLE property ADD COLUMN toilets INT NULL',
             'area_sqm': 'ALTER TABLE property ADD COLUMN area_sqm INT NULL',
             'prop_status': "ALTER TABLE property ADD COLUMN prop_status VARCHAR(20) NOT NULL DEFAULT 'available'",
+            'prop_views': 'ALTER TABLE property ADD COLUMN prop_views INT NOT NULL DEFAULT 0',
         }
 
         changed = False
         for col_name, ddl in required.items():
             if col_name not in columns:
-                db.session.execute(text(ddl))
-                changed = True
+                try:
+                    db.session.execute(text(ddl))
+                    db.session.commit()
+                    changed = True
+                except Exception:
+                    db.session.rollback()
 
         if changed:
-            db.session.commit()
             _TABLE_COLUMNS_CACHE.pop('property', None)
 
-        db.session.execute(
-            text(
-                "UPDATE property SET prop_status = 'available' "
-                "WHERE prop_status IS NULL OR LOWER(TRIM(prop_status)) NOT IN ('available', 'pending', 'rented')"
+        try:
+            db.session.execute(
+                text(
+                    "UPDATE property SET prop_status = 'available' "
+                    "WHERE prop_status IS NULL OR LOWER(TRIM(prop_status)) NOT IN ('available', 'pending', 'rented')"
+                )
             )
-        )
-        db.session.commit()
+            db.session.execute(
+                text(
+                    "UPDATE property SET prop_views = 0 "
+                    "WHERE prop_views IS NULL OR prop_views < 0"
+                )
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     except Exception:
         db.session.rollback()
 
@@ -2693,8 +2711,12 @@ def post_property(property_id=None):
             app.logger.exception('Property save failed for user %s and property %s', user_id, property_id)
 
             db.session.rollback()
+            try:
+                ensure_property_specs_schema()
+            except Exception:
+                pass
 
-            flash(f"Failed to save property: {e}", "danger")
+            flash("Unable to save your property listing right now. Please try again.", "danger")
             return redirect(
                 url_for('post_property', property_id=property_id)
                 if property_id else
@@ -2751,6 +2773,15 @@ def property_detail(property_id):
         abort(404)
 
     property_data = dict(result)
+
+    raw_status = (property_data.get('prop_status') or 'available').strip().lower()
+    is_owner = bool(current_user and current_user == property_data['owner_id'])
+    is_admin = bool(session.get('admin_id'))
+
+    if raw_status not in ('available', '') and not (is_owner or is_admin):
+        flash('This property listing is currently pending approval or no longer available.', 'warning')
+        return redirect(url_for('properties'))
+
     view_was_recorded = _record_property_view_once(property_id)
     property_data['prop_views'] = int(property_data.get('prop_views') or 0) + (1 if view_was_recorded else 0)
     property_data['status'] = _property_status_presentation(property_data.get('prop_status'))

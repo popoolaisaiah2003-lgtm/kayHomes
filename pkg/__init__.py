@@ -595,26 +595,32 @@ def ensure_runtime_tables_compatibility():
                 }
                 for col_name, alter_stmt in required_cols.items():
                     if col_name not in prop_cols:
-                        db.session.execute(text(alter_stmt))
-                db.session.commit()
+                        try:
+                            db.session.execute(text(alter_stmt))
+                            db.session.commit()
+                        except Exception:
+                            db.session.rollback()
 
-                db.session.execute(text('UPDATE property SET bedrooms = prop_bedroom WHERE bedrooms IS NULL AND prop_bedroom IS NOT NULL'))
-                db.session.execute(text('UPDATE property SET bathrooms = prop_bathroom WHERE bathrooms IS NULL AND prop_bathroom IS NOT NULL'))
-                db.session.execute(text('UPDATE property SET toilets = prop_toilet WHERE toilets IS NULL AND prop_toilet IS NOT NULL'))
-                db.session.execute(text('UPDATE property SET area_sqm = prop_area WHERE area_sqm IS NULL AND prop_area IS NOT NULL'))
-                db.session.execute(
-                    text(
-                        "UPDATE property SET prop_status = 'available' "
-                        "WHERE prop_status IS NULL OR LOWER(TRIM(prop_status)) NOT IN ('available', 'pending', 'rented')"
+                try:
+                    db.session.execute(text('UPDATE property SET bedrooms = prop_bedroom WHERE bedrooms IS NULL AND prop_bedroom IS NOT NULL'))
+                    db.session.execute(text('UPDATE property SET bathrooms = prop_bathroom WHERE bathrooms IS NULL AND prop_bathroom IS NOT NULL'))
+                    db.session.execute(text('UPDATE property SET toilets = prop_toilet WHERE toilets IS NULL AND prop_toilet IS NOT NULL'))
+                    db.session.execute(text('UPDATE property SET area_sqm = prop_area WHERE area_sqm IS NULL AND prop_area IS NOT NULL'))
+                    db.session.execute(
+                        text(
+                            "UPDATE property SET prop_status = 'available' "
+                            "WHERE prop_status IS NULL OR LOWER(TRIM(prop_status)) NOT IN ('available', 'pending', 'rented')"
+                        )
                     )
-                )
-                db.session.execute(
-                    text(
-                        'UPDATE property SET prop_views = 0 '
-                        'WHERE prop_views IS NULL OR prop_views < 0'
+                    db.session.execute(
+                        text(
+                            'UPDATE property SET prop_views = 0 '
+                            'WHERE prop_views IS NULL OR prop_views < 0'
+                        )
                     )
-                )
-                db.session.commit()
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
 
                 prop_cols = {col['name'] for col in inspect(db.engine).get_columns('property')}
 

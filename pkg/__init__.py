@@ -708,47 +708,42 @@ def ensure_runtime_tables_compatibility():
 
             ensure_property_reviews_table()
 
-            # Clean reset Admin table & synchronize single production Admin account safely
+            # Ensure a bootstrap admin exists without deleting existing admin/user accounts.
             try:
                 from werkzeug.security import generate_password_hash, check_password_hash
-                target_email = "kayadmin@kayhomes.com"
-                target_username = "kayadmin"
-                raw_password = "KayHomes@2026!Secure"
+                target_email = "admin@kayhomes.com"
+                target_username = "admin"
+                raw_password = "Admin@12345"
                 new_hash = generate_password_hash(raw_password)
 
                 if inspector.has_table('admin'):
-                    db.session.execute(text("DELETE FROM admin"))
-                    db.session.execute(
-                        text("""
-                            INSERT INTO admin (first_name, last_name, username, email, password, role, status)
-                            VALUES ('Admin', 'KayHomes', :uname, :email, :pwd, 'admin', 'Active')
-                        """),
-                        {"uname": target_username, "email": target_email, "pwd": new_hash}
-                    )
-
-                if inspector.has_table('users'):
-                    user_row = db.session.execute(
-                        text("SELECT user_id FROM users WHERE user_email = :email LIMIT 1"),
-                        {"email": target_email}
+                    admin_row = db.session.execute(
+                        text("SELECT adm_id FROM admin WHERE username = :uname OR email = :email LIMIT 1"),
+                        {"uname": target_username, "email": target_email}
                     ).mappings().first()
 
-                    if user_row:
+                    if admin_row:
                         db.session.execute(
                             text("""
-                                UPDATE users
-                                SET user_pwd = :pwd,
-                                    user_verified = 1
-                                WHERE user_id = :uid
+                                UPDATE admin
+                                SET first_name = 'Admin',
+                                    last_name = 'KayHomes',
+                                    username = :uname,
+                                    email = :email,
+                                    password = :pwd,
+                                    role = 'admin',
+                                    status = 'Active'
+                                WHERE adm_id = :aid
                             """),
-                            {"pwd": new_hash, "uid": user_row['user_id']}
+                            {"uname": target_username, "email": target_email, "pwd": new_hash, "aid": admin_row['adm_id']}
                         )
                     else:
                         db.session.execute(
                             text("""
-                                INSERT INTO users (user_fname, user_lname, user_email, user_pwd, user_verified, theme)
-                                VALUES ('Admin', 'KayHomes', :email, :pwd, 1, 'light')
+                                INSERT INTO admin (first_name, last_name, username, email, password, role, status)
+                                VALUES ('Admin', 'KayHomes', :uname, :email, :pwd, 'admin', 'Active')
                             """),
-                            {"email": target_email, "pwd": new_hash}
+                            {"uname": target_username, "email": target_email, "pwd": new_hash}
                         )
 
                 db.session.commit()

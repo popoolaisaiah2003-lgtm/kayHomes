@@ -1,120 +1,206 @@
-<div class="container-fluid">
-  <div class="row">
-    <nav class="navbar navbar-expand-lg sticky-top">
-      <div class="container-fluid px-3 px-lg-4">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
-          <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
-          <img src="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}" alt="KayHomes icon logo" class="brand-logo-icon">
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+<div class="container-fluid p-0">
+  <nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container-fluid px-3 px-lg-4">
+      <!-- Brand Logo -->
+      <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+        <img src="{{ url_for('static', filename='images/logo-kayhomes-full.svg') }}" alt="KayHomes logo" class="brand-logo-full">
+        <img src="{{ url_for('static', filename='images/logo-kayhomes-icon.svg') }}" alt="KayHomes icon logo" class="brand-logo-icon">
+      </a>
+
+      {% if session.get('admin_id') %}
+        <!-- Admin Top Navigation -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarNav" aria-controls="adminNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="collapse navbar-collapse" id="adminNavbarNav">
           <ul class="navbar-nav ms-auto align-items-lg-center">
-            {% if session.get('admin_id') %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'admin_profile' %}active{% endif %}" href="{{ url_for('admin_profile') }}">Profile</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'admin_change_password' %}active{% endif %}" href="{{ url_for('admin_change_password') }}">Settings</a>
-              </li>
-              <li class="nav-item">
-                <form method="POST" action="{{ url_for('admin_logout') }}" class="d-inline ms-lg-3">
-                  <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
-                  <button type="submit" class="btn btn-primary btn-sm">Logout</button>
-                </form>
-              </li>
-            {% else %}
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
-              </li>
-              {% if session.get('user_id') %}
-                {% set logged_in_user_first_name = session.get('user_name') or 'User' %}
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint in ['contact'] %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">Favorites</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}">Saved Searches</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">Analytics</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">Dashboard</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link {% if request.endpoint == 'messages' %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
-                    <i class="bi bi-chat-left-text me-1"></i> Messages
-                    <span id="navMessagesBadge" class="badge bg-danger ms-1 {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
-                  </a>
-                </li>
-                <li class="nav-item dropdown ms-lg-1">
-                  <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
-                    <i class="bi bi-bell fs-5"></i>
-                    {% if notification_unread_count and notification_unread_count > 0 %}
-                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notification_unread_count }}</span>
-                    {% endif %}
-                  </a>
-                  <div class="dropdown-menu dropdown-menu-end p-0 shadow-sm" style="min-width: 340px; max-width: 360px;">
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
-                      <h6 class="mb-0 fw-bold">Notifications</h6>
-                      <a href="{{ url_for('notifications') }}" class="small text-decoration-none">View all</a>
-                    </div>
-                    <div class="list-group list-group-flush" style="max-height: 360px; overflow-y: auto;">
-                      {% if latest_notifications %}
-                        {% for item in latest_notifications %}
-                          <a href="{{ item.link or url_for('notifications') }}" class="list-group-item list-group-item-action py-2 {% if not item.is_read %}bg-light{% endif %}">
-                            <div class="d-flex w-100 justify-content-between align-items-start gap-2">
-                              <div>
-                                <div class="fw-semibold small mb-1">{{ item.title }}</div>
-                                <div class="text-muted small">{{ item.message }}</div>
-                              </div>
-                              <small class="text-muted text-nowrap">{{ item.created_at_display }}</small>
-                            </div>
-                          </a>
-                        {% endfor %}
-                      {% else %}
-                        <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
-                      {% endif %}
-                    </div>
-                  </div>
-                </li>
-                <li class="nav-item dropdown ms-lg-2">
-                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Hello, {{ logged_in_user_first_name }}
-                  </a>
-                  <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">🚪 Logout</a></li>
-                  </ul>
-                </li>
-              {% else %}
-                <li class="nav-item ms-lg-2">
-                  <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
-                </li>
-                <li class="nav-item">
-                  <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
-                </li>
-              {% endif %}
-            {% endif %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'admin_profile' %}active{% endif %}" href="{{ url_for('admin_profile') }}">Profile</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'admin_change_password' %}active{% endif %}" href="{{ url_for('admin_change_password') }}">Settings</a>
+            </li>
+            <li class="nav-item">
+              <form method="POST" action="{{ url_for('admin_logout') }}" class="d-inline ms-lg-3">
+                <input type="hidden" name="csrf_token" value="{{ admin_csrf_token }}">
+                <button type="submit" class="btn btn-primary btn-sm">Logout</button>
+              </form>
+            </li>
           </ul>
         </div>
-      </div>
-    </nav>
-  </div>
+
+      {% elif session.get('user_id') %}
+        <!-- Authenticated User Top Navigation -->
+        {% set user_first_name = current_user.user_fname if current_user else (session.get('user_name') or 'User') %}
+        <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
+          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
+            </li>
+          </ul>
+
+          <!-- Notification Dropdown Bell -->
+          <div class="dropdown">
+            <a class="nav-link position-relative p-2 rounded-circle hover-bg-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+              <i class="bi bi-bell fs-5"></i>
+              {% if notification_unread_count and notification_unread_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notification_unread_count }}</span>
+              {% endif %}
+            </a>
+            <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 nav-notification-menu mt-2">
+              <div class="d-flex align-items-center justify-content-between px-3 py-2.5 border-bottom">
+                <h6 class="mb-0 fw-bold">Notifications</h6>
+                <a href="{{ url_for('notifications') }}" class="small text-decoration-none fw-semibold">View all</a>
+              </div>
+              <div class="list-group list-group-flush" style="max-height: 340px; overflow-y: auto;">
+                {% if latest_notifications %}
+                  {% for item in latest_notifications %}
+                    <a href="{{ item.link or url_for('notifications') }}" class="list-group-item list-group-item-action py-2.5 px-3 {% if not item.is_read %}bg-light{% endif %}">
+                      <div class="d-flex w-100 justify-content-between align-items-start gap-2">
+                        <div>
+                          <div class="fw-semibold small mb-1">{{ item.title }}</div>
+                          <div class="text-muted small">{{ item.message }}</div>
+                        </div>
+                        <small class="text-muted text-nowrap" style="font-size: 0.75rem;">{{ item.created_at_display }}</small>
+                      </div>
+                    </a>
+                  {% endfor %}
+                {% else %}
+                  <div class="px-3 py-4 text-center text-muted small">No notifications yet.</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile / Offcanvas Toggle Button -->
+          <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5 shadow-sm fw-semibold ms-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#userOffcanvasNavbar" aria-controls="userOffcanvasNavbar" aria-label="User Menu">
+            <span>Hello, {{ user_first_name }} 👋</span>
+            <i class="bi bi-list fs-5"></i>
+          </button>
+        </div>
+
+        <!-- Right-Side Bootstrap 5 Offcanvas Menu -->
+        <div class="offcanvas offcanvas-end kh-app-offcanvas border-0 shadow-lg" tabindex="-1" id="userOffcanvasNavbar" aria-labelledby="userOffcanvasNavbarLabel">
+          <div class="offcanvas-header border-bottom py-3 px-4">
+            <div class="d-flex align-items-center gap-3 w-100 me-2">
+              {% if current_user_avatar_url %}
+                <img src="{{ current_user_avatar_url }}" alt="{{ user_first_name }} avatar" class="rounded-circle shadow-sm border" style="width: 52px; height: 52px; object-fit: cover;">
+              {% else %}
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-4 shadow-sm" style="width: 52px; height: 52px;">
+                  {{ user_first_name[0] | upper if user_first_name else 'U' }}
+                </div>
+              {% endif %}
+              <div class="overflow-hidden">
+                <h6 class="mb-0 fw-bold text-truncate" id="userOffcanvasNavbarLabel">
+                  {{ current_user.user_fname if current_user else user_first_name }} {{ current_user.user_lname if current_user else '' }}
+                </h6>
+                <small class="text-muted text-truncate d-block" style="font-size: 0.825rem;">
+                  {{ current_user.user_email if current_user and current_user.user_email else 'Authenticated User' }}
+                </small>
+              </div>
+            </div>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          </div>
+
+          <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
+            <div class="kh-offcanvas-menu-groups">
+              <!-- Workspace Group -->
+              <div class="kh-menu-group mb-4">
+                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Workspace</div>
+                <div class="nav flex-column gap-1">
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">
+                    <i class="bi bi-speedometer2 fs-5 text-primary"></i>
+                    <span class="fw-medium">Dashboard</span>
+                  </a>
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_listings' %}active{% endif %}" href="{{ url_for('my_listings') }}">
+                    <i class="bi bi-building fs-5 text-primary"></i>
+                    <span class="fw-medium">My Listings</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Activity & Saved Group -->
+              <div class="kh-menu-group mb-4">
+                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Activity & Saved</div>
+                <div class="nav flex-column gap-1">
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}">
+                    <i class="bi bi-bookmark-heart fs-5 text-primary"></i>
+                    <span class="fw-medium">Saved Searches</span>
+                  </a>
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">
+                    <i class="bi bi-heart fs-5 text-primary"></i>
+                    <span class="fw-medium">Favorites</span>
+                  </a>
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
+                    <i class="bi bi-graph-up-arrow fs-5 text-primary"></i>
+                    <span class="fw-medium">Analytics</span>
+                  </a>
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['messages', 'chat'] %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
+                    <i class="bi bi-chat-left-text fs-5 text-primary"></i>
+                    <span class="fw-medium">Messages</span>
+                    <span id="navMessagesBadge" class="badge bg-danger ms-auto rounded-pill {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Account Group -->
+              <div class="kh-menu-group mb-3">
+                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Account</div>
+                <div class="nav flex-column gap-1">
+                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">
+                    <i class="bi bi-person-gear fs-5 text-primary"></i>
+                    <span class="fw-medium">Profile</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Separated Logout Button at Bottom -->
+            <div class="pt-3 border-top mt-auto">
+              <a class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-semibold shadow-sm" href="{{ url_for('logout') }}">
+                <i class="bi bi-box-arrow-right fs-5"></i>
+                <span>Logout</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      {% else %}
+        <!-- Guest User Top Navigation -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNavbarNav" aria-controls="guestNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="guestNavbarNav">
+          <ul class="navbar-nav ms-auto align-items-lg-center">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
+            </li>
+            <li class="nav-item ms-lg-2">
+              <a class="btn btn-outline-primary me-2" href="{{ url_for('login') }}">Sign In</a>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-primary" href="{{ url_for('register') }}">Sign Up</a>
+            </li>
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+  </nav>
 </div>

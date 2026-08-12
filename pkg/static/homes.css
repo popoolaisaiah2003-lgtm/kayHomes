@@ -72,6 +72,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: "Poppins", "Inter", "Segoe UI", sans-serif;
@@ -130,6 +135,7 @@ a:hover {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--kh-navbar-border);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  z-index: 1040;
 }
 
 .navbar-brand {
@@ -174,6 +180,11 @@ a:hover {
   border: 1px solid var(--kh-border);
   border-radius: 12px;
   box-shadow: var(--kh-shadow-md);
+}
+
+.nav-notification-menu {
+  min-width: 340px;
+  max-width: 360px;
 }
 
 .dropdown-item.active,
@@ -911,10 +922,33 @@ textarea.form-control,
 @media (max-width: 991.98px) {
   .navbar-collapse {
     padding: 0.95rem 0;
+    margin-top: 0.6rem;
+    border: 1px solid var(--kh-border);
+    border-radius: 14px;
+    background: var(--kh-surface);
+    box-shadow: var(--kh-shadow-sm);
   }
 
   .navbar-nav .nav-item {
     width: 100%;
+  }
+
+  .navbar-nav {
+    align-items: stretch !important;
+  }
+
+  .navbar-nav .dropdown-menu {
+    position: static;
+    float: none;
+    margin-top: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .nav-notification-menu {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .navbar-nav .btn {
@@ -1546,6 +1580,40 @@ input[name="review_tags"]:checked + .tag-check-label {
   .border-end-md {
     border-right: 1px solid var(--kh-border) !important;
   }
+}
+
+/* App Offcanvas Navigation Styling */
+.kh-app-offcanvas {
+  width: 320px !important;
+  max-width: 85vw;
+  background: var(--kh-surface) !important;
+  color: var(--kh-text-primary) !important;
+}
+
+.kh-offcanvas-link {
+  color: var(--kh-text-primary) !important;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.kh-offcanvas-link:hover {
+  background-color: rgba(22, 163, 74, 0.08) !important;
+  color: var(--kh-primary) !important;
+  transform: translateX(3px);
+}
+
+.kh-offcanvas-link.active {
+  background: linear-gradient(120deg, var(--kh-primary), var(--kh-primary-strong)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.kh-offcanvas-link.active i {
+  color: #ffffff !important;
+}
+
+.tracking-wider {
+  letter-spacing: 0.06em;
 }
 
 

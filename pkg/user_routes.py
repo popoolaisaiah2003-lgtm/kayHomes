@@ -2021,10 +2021,16 @@ def inject_unread_count():
     unread_count = 0
     notification_unread_count = 0
     latest_notifications = []
+    current_user_obj = None
+    current_user_avatar = None
     if session.get('user_id'):
-        unread_count = _get_unread_message_count(session['user_id'])
-        notification_unread_count = _get_unread_notification_count(session['user_id'])
-        latest_notifications = _get_latest_notifications(session['user_id'], limit=10)
+        user_id = session['user_id']
+        unread_count = _get_unread_message_count(user_id)
+        notification_unread_count = _get_unread_notification_count(user_id)
+        latest_notifications = _get_latest_notifications(user_id, limit=10)
+        current_user_obj = get_current_user()
+        if current_user_obj:
+            current_user_avatar = _user_avatar_url(getattr(current_user_obj, 'user_avatar', None))
 
     endpoint = request.endpoint or ''
     view_func = app.view_functions.get(endpoint)
@@ -2038,6 +2044,8 @@ def inject_unread_count():
         '_properties_page_params': _properties_page_params,
         'current_theme': get_current_theme(),
         'is_authenticated_page': is_authenticated_page,
+        'current_user': current_user_obj,
+        'current_user_avatar_url': current_user_avatar,
     }
 
 

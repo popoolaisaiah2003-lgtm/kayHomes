@@ -702,7 +702,7 @@ def admin_login():
         flash('Welcome back, admin.', 'success')
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('admin-login.html', title='Admin Login')
+    return render_template('admin/login.html', title='Admin Login')
 
 
 @app.route('/admin/')

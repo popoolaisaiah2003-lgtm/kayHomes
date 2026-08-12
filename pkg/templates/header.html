@@ -37,7 +37,7 @@
         <!-- Authenticated User Top Navigation -->
         {% set user_first_name = current_user.user_fname if current_user else (session.get('user_name') or 'User') %}
         <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
-          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0">
+          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0 d-none d-lg-flex">
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
             </li>
@@ -89,92 +89,6 @@
           </button>
         </div>
 
-        <!-- Right-Side Bootstrap 5 Offcanvas Menu -->
-        <div class="offcanvas offcanvas-end kh-app-offcanvas border-0 shadow-lg" tabindex="-1" id="userOffcanvasNavbar" aria-labelledby="userOffcanvasNavbarLabel">
-          <div class="offcanvas-header border-bottom py-3 px-4">
-            <div class="d-flex align-items-center gap-3 w-100 me-2">
-              {% if current_user_avatar_url %}
-                <img src="{{ current_user_avatar_url }}" alt="{{ user_first_name }} avatar" class="rounded-circle shadow-sm border" style="width: 52px; height: 52px; object-fit: cover;">
-              {% else %}
-                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-4 shadow-sm" style="width: 52px; height: 52px;">
-                  {{ user_first_name[0] | upper if user_first_name else 'U' }}
-                </div>
-              {% endif %}
-              <div class="overflow-hidden">
-                <h6 class="mb-0 fw-bold text-truncate" id="userOffcanvasNavbarLabel">
-                  {{ current_user.user_fname if current_user else user_first_name }} {{ current_user.user_lname if current_user else '' }}
-                </h6>
-                <small class="text-muted text-truncate d-block" style="font-size: 0.825rem;">
-                  {{ current_user.user_email if current_user and current_user.user_email else 'Authenticated User' }}
-                </small>
-              </div>
-            </div>
-            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-          </div>
-
-          <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
-            <div class="kh-offcanvas-menu-groups">
-              <!-- Workspace Group -->
-              <div class="kh-menu-group mb-4">
-                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Workspace</div>
-                <div class="nav flex-column gap-1">
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">
-                    <i class="bi bi-speedometer2 fs-5 text-primary"></i>
-                    <span class="fw-medium">Dashboard</span>
-                  </a>
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_listings' %}active{% endif %}" href="{{ url_for('my_listings') }}">
-                    <i class="bi bi-building fs-5 text-primary"></i>
-                    <span class="fw-medium">My Listings</span>
-                  </a>
-                </div>
-              </div>
-
-              <!-- Activity & Saved Group -->
-              <div class="kh-menu-group mb-4">
-                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Activity & Saved</div>
-                <div class="nav flex-column gap-1">
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}">
-                    <i class="bi bi-bookmark-heart fs-5 text-primary"></i>
-                    <span class="fw-medium">Saved Searches</span>
-                  </a>
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">
-                    <i class="bi bi-heart fs-5 text-primary"></i>
-                    <span class="fw-medium">Favorites</span>
-                  </a>
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
-                    <i class="bi bi-graph-up-arrow fs-5 text-primary"></i>
-                    <span class="fw-medium">Analytics</span>
-                  </a>
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['messages', 'chat'] %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
-                    <i class="bi bi-chat-left-text fs-5 text-primary"></i>
-                    <span class="fw-medium">Messages</span>
-                    <span id="navMessagesBadge" class="badge bg-danger ms-auto rounded-pill {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
-                  </a>
-                </div>
-              </div>
-
-              <!-- Account Group -->
-              <div class="kh-menu-group mb-3">
-                <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Account</div>
-                <div class="nav flex-column gap-1">
-                  <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">
-                    <i class="bi bi-person-gear fs-5 text-primary"></i>
-                    <span class="fw-medium">Profile</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Separated Logout Button at Bottom -->
-            <div class="pt-3 border-top mt-auto">
-              <a class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-semibold shadow-sm" href="{{ url_for('logout') }}">
-                <i class="bi bi-box-arrow-right fs-5"></i>
-                <span>Logout</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
       {% else %}
         <!-- Guest User Top Navigation -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#guestNavbarNav" aria-controls="guestNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -204,3 +118,92 @@
     </div>
   </nav>
 </div>
+
+{% if session.get('user_id') %}
+  {% set user_first_name = current_user.user_fname if current_user else (session.get('user_name') or 'User') %}
+  <!-- Right-Side Bootstrap 5 Offcanvas Menu -->
+  <div class="offcanvas offcanvas-end kh-app-offcanvas border-0 shadow-lg" tabindex="-1" id="userOffcanvasNavbar" aria-labelledby="userOffcanvasNavbarLabel" data-bs-backdrop="true" data-bs-scroll="false">
+    <div class="offcanvas-header border-bottom py-3 px-4">
+      <div class="d-flex align-items-center gap-3 w-100 me-2">
+        {% if current_user_avatar_url %}
+          <img src="{{ current_user_avatar_url }}" alt="{{ user_first_name }} avatar" class="rounded-circle shadow-sm border" style="width: 52px; height: 52px; object-fit: cover;">
+        {% else %}
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-4 shadow-sm" style="width: 52px; height: 52px;">
+            {{ user_first_name[0] | upper if user_first_name else 'U' }}
+          </div>
+        {% endif %}
+        <div class="overflow-hidden">
+          <h6 class="mb-0 fw-bold text-truncate" id="userOffcanvasNavbarLabel">
+            {{ current_user.user_fname if current_user else user_first_name }} {{ current_user.user_lname if current_user else '' }}
+          </h6>
+          <small class="text-muted text-truncate d-block" style="font-size: 0.825rem;">
+            {{ current_user.user_email if current_user and current_user.user_email else 'Authenticated User' }}
+          </small>
+        </div>
+      </div>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
+      <div class="kh-offcanvas-menu-groups">
+        <!-- Workspace Group -->
+        <div class="kh-menu-group mb-4">
+          <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Workspace</div>
+          <div class="nav flex-column gap-1">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-speedometer2 fs-5 text-primary"></i>
+              <span class="fw-medium">Dashboard</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_listings' %}active{% endif %}" href="{{ url_for('my_listings') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-building fs-5 text-primary"></i>
+              <span class="fw-medium">My Listings</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Activity & Saved Group -->
+        <div class="kh-menu-group mb-4">
+          <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Activity & Saved</div>
+          <div class="nav flex-column gap-1">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-bookmark-heart fs-5 text-primary"></i>
+              <span class="fw-medium">Saved Searches</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-heart fs-5 text-primary"></i>
+              <span class="fw-medium">Favorites</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-graph-up-arrow fs-5 text-primary"></i>
+              <span class="fw-medium">Analytics</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['messages', 'chat'] %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-chat-left-text fs-5 text-primary"></i>
+              <span class="fw-medium">Messages</span>
+              <span id="navMessagesBadge" class="badge bg-danger ms-auto rounded-pill {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Account Group -->
+        <div class="kh-menu-group mb-3">
+          <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Account</div>
+          <div class="nav flex-column gap-1">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-person-gear fs-5 text-primary"></i>
+              <span class="fw-medium">Profile</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Separated Logout Button at Bottom -->
+      <div class="pt-3 border-top mt-auto">
+        <a class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-semibold shadow-sm" href="{{ url_for('logout') }}" data-bs-dismiss="offcanvas">
+          <i class="bi bi-box-arrow-right fs-5"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+{% endif %}

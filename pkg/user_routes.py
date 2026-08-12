@@ -2578,7 +2578,7 @@ def post_property(property_id=None):
         prop_title = request.form.get('prop_title')
         category_id = request.form.get('category_id', type=int)
         listing_type = request.form.get('listing_type')
-        prop_status = _normalize_property_status(request.form.get('prop_status'))
+        requested_status = _normalize_property_status(request.form.get('prop_status'))
         prop_desc = request.form.get('prop_desc')
         prop_price = request.form.get('prop_price', '')
 
@@ -2645,7 +2645,7 @@ def post_property(property_id=None):
                 property_obj.category_id = category_id
                 property_obj.prop_type = prop_type
                 property_obj.listing_type = listing_type
-                property_obj.prop_status = prop_status
+                property_obj.prop_status = requested_status
                 property_obj.prop_desc = prop_desc
                 property_obj.prop_price = prop_price
                 property_obj.prop_location = prop_location
@@ -2681,7 +2681,8 @@ def post_property(property_id=None):
                     'category_id': category_id,
                     'prop_type': prop_type,
                     'listing_type': listing_type,
-                    'prop_status': prop_status,
+                    # New listings should be publicly visible immediately.
+                    'prop_status': 'available',
                     'prop_desc': prop_desc,
                     'prop_price': prop_price,
                     'prop_location': prop_location,
@@ -2787,7 +2788,7 @@ def property_detail(property_id):
     is_admin = bool(session.get('admin_id'))
 
     if raw_status not in ('available', '') and not (is_owner or is_admin):
-        flash('This property listing is currently pending approval or no longer available.', 'warning')
+        flash('This property listing is currently unavailable.', 'warning')
         return redirect(url_for('properties'))
 
     view_was_recorded = _record_property_view_once(property_id)

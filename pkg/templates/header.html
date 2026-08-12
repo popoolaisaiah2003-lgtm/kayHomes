@@ -1,5 +1,5 @@
 <div class="container-fluid p-0">
-  <nav class="navbar navbar-expand-lg sticky-top">
+  <nav class="navbar navbar-expand-lg kh-navbar">
     <div class="container-fluid px-3 px-lg-4">
       <!-- Brand Logo -->
       <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
@@ -37,7 +37,7 @@
         <!-- Authenticated User Top Navigation -->
         {% set user_first_name = current_user.user_fname if current_user else (session.get('user_name') or 'User') %}
         <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
-          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0 d-none d-lg-flex">
+          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0 d-none d-xl-flex">
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
             </li>
@@ -146,6 +146,25 @@
 
     <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
       <div class="kh-offcanvas-menu-groups">
+        <!-- Public Navigation -->
+        <div class="kh-menu-group mb-4">
+          <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Navigation</div>
+          <div class="nav flex-column gap-1">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-house-door fs-5 text-primary"></i>
+              <span class="fw-medium">Home</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-buildings fs-5 text-primary"></i>
+              <span class="fw-medium">Properties</span>
+            </a>
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}" data-bs-dismiss="offcanvas">
+              <i class="bi bi-envelope fs-5 text-primary"></i>
+              <span class="fw-medium">Contact</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Workspace Group -->
         <div class="kh-menu-group mb-4">
           <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Workspace</div>

@@ -36,25 +36,27 @@
       {% elif session.get('user_id') %}
         <!-- Authenticated User Top Navigation -->
         {% set user_first_name = current_user.user_fname if current_user else (session.get('user_name') or 'User') %}
-        <div class="d-flex align-items-center gap-2 gap-md-3 ms-auto">
-          <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0 d-none d-xl-flex">
-            <li class="nav-item">
-              <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
-            </li>
-          </ul>
+        <div class="kh-header-row ms-auto">
+          <div class="kh-header-center">
+            <ul class="navbar-nav flex-row align-items-center gap-1 gap-md-2 me-1 me-md-2 mb-0 d-none d-xl-flex">
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">Properties</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
+              </li>
+            </ul>
+          </div>
 
           <!-- Notification Dropdown Bell -->
-          <div class="dropdown">
+          <div class="dropdown kh-notification-wrap">
             <a class="nav-link position-relative p-2 rounded-circle hover-bg-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
               <i class="bi bi-bell fs-5"></i>
               {% if notification_unread_count and notification_unread_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ notification_unread_count }}</span>
+                <span class="badge rounded-pill bg-danger ms-1 kh-bell-badge">{{ notification_unread_count }}</span>
               {% endif %}
             </a>
             <div class="dropdown-menu dropdown-menu-end p-0 shadow-lg border-0 rounded-4 nav-notification-menu mt-2">
@@ -83,10 +85,12 @@
           </div>
 
           <!-- Profile / Offcanvas Toggle Button -->
-          <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5 shadow-sm fw-semibold ms-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#userOffcanvasNavbar" aria-controls="userOffcanvasNavbar" aria-label="User Menu">
-            <span>Hello, {{ user_first_name }} 👋</span>
-            <i class="bi bi-list fs-5"></i>
-          </button>
+          <div class="kh-menu-btn-wrap">
+            <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 rounded-pill px-3 py-1.5 shadow-sm fw-semibold ms-1 kh-menu-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#userOffcanvasNavbar" aria-controls="userOffcanvasNavbar" aria-label="User Menu">
+              <span class="kh-greeting">Hello, {{ user_first_name }} 👋</span>
+              <i class="bi bi-list fs-5"></i>
+            </button>
+          </div>
         </div>
 
       {% else %}
@@ -150,15 +154,15 @@
         <div class="kh-menu-group mb-4">
           <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Navigation</div>
           <div class="nav flex-column gap-1">
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'home' %}active{% endif %}" href="{{ url_for('home') }}">
               <i class="bi bi-house-door fs-5 text-primary"></i>
               <span class="fw-medium">Home</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'properties' %}active{% endif %}" href="{{ url_for('properties') }}">
               <i class="bi bi-buildings fs-5 text-primary"></i>
               <span class="fw-medium">Properties</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'contact' %}active{% endif %}" href="{{ url_for('contact') }}">
               <i class="bi bi-envelope fs-5 text-primary"></i>
               <span class="fw-medium">Contact</span>
             </a>
@@ -169,11 +173,11 @@
         <div class="kh-menu-group mb-4">
           <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Workspace</div>
           <div class="nav flex-column gap-1">
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['user_dashboard', 'profile'] %}active{% endif %}" href="{{ url_for('user_dashboard') }}">
               <i class="bi bi-speedometer2 fs-5 text-primary"></i>
               <span class="fw-medium">Dashboard</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_listings' %}active{% endif %}" href="{{ url_for('my_listings') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_listings' %}active{% endif %}" href="{{ url_for('my_listings') }}">
               <i class="bi bi-building fs-5 text-primary"></i>
               <span class="fw-medium">My Listings</span>
             </a>
@@ -184,19 +188,19 @@
         <div class="kh-menu-group mb-4">
           <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Activity & Saved</div>
           <div class="nav flex-column gap-1">
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'saved_searches' %}active{% endif %}" href="{{ url_for('saved_searches') }}">
               <i class="bi bi-bookmark-heart fs-5 text-primary"></i>
               <span class="fw-medium">Saved Searches</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'my_favorites' %}active{% endif %}" href="{{ url_for('my_favorites') }}">
               <i class="bi bi-heart fs-5 text-primary"></i>
               <span class="fw-medium">Favorites</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
               <i class="bi bi-graph-up-arrow fs-5 text-primary"></i>
               <span class="fw-medium">Analytics</span>
             </a>
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['messages', 'chat'] %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint in ['messages', 'chat'] %}active{% endif %}" href="{{ url_for('messages') }}" data-unread-count-url="{{ url_for('unread_message_count_api') }}">
               <i class="bi bi-chat-left-text fs-5 text-primary"></i>
               <span class="fw-medium">Messages</span>
               <span id="navMessagesBadge" class="badge bg-danger ms-auto rounded-pill {% if not unread_count or unread_count <= 0 %}d-none{% endif %}">{{ unread_count or 0 }}</span>
@@ -208,7 +212,7 @@
         <div class="kh-menu-group mb-3">
           <div class="text-uppercase text-muted fw-bold mb-2 tracking-wider" style="font-size: 0.725rem;">Account</div>
           <div class="nav flex-column gap-1">
-            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}" data-bs-dismiss="offcanvas">
+            <a class="nav-link kh-offcanvas-link d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 {% if request.endpoint == 'profile' %}active{% endif %}" href="{{ url_for('profile') }}">
               <i class="bi bi-person-gear fs-5 text-primary"></i>
               <span class="fw-medium">Profile</span>
             </a>
@@ -218,7 +222,7 @@
 
       <!-- Separated Logout Button at Bottom -->
       <div class="pt-3 border-top mt-auto">
-        <a class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-semibold shadow-sm" href="{{ url_for('logout') }}" data-bs-dismiss="offcanvas">
+        <a class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2.5 rounded-3 fw-semibold shadow-sm" href="{{ url_for('logout') }}">
           <i class="bi bi-box-arrow-right fs-5"></i>
           <span>Logout</span>
         </a>

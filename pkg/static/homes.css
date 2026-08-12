@@ -186,6 +186,46 @@ a:hover {
   max-width: 360px;
 }
 
+.kh-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.kh-header-center {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.kh-notification-wrap {
+  flex: 0 0 auto;
+}
+
+.kh-menu-btn-wrap {
+  flex: 0 0 auto;
+}
+
+.kh-greeting {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 180px;
+}
+
+.kh-menu-btn {
+  position: relative;
+}
+
+.kh-bell-badge {
+  vertical-align: middle;
+}
+
 .dropdown-item.active,
 .dropdown-item:active {
   background-color: rgba(22, 163, 74, 0.12);
@@ -1583,20 +1623,21 @@ input[name="review_tags"]:checked + .tag-check-label {
 
 /* App Offcanvas Navigation Styling */
 .kh-app-offcanvas {
+  --kh-navbar-height: 72px;
   width: 320px !important;
   max-width: 85vw;
   background: var(--kh-surface) !important;
   color: var(--kh-text-primary) !important;
-  top: 0 !important;
+  top: var(--kh-navbar-height) !important;
   margin-top: 0 !important;
   padding-top: 0 !important;
-  height: 100dvh;
-  max-height: 100dvh;
+  height: calc(100dvh - var(--kh-navbar-height));
+  max-height: calc(100dvh - var(--kh-navbar-height));
 }
 
 .kh-app-offcanvas.offcanvas-end {
   right: 0;
-  top: 0;
+  top: var(--kh-navbar-height);
 }
 
 @media (max-width: 991.98px) {
@@ -1631,6 +1672,7 @@ input[name="review_tags"]:checked + .tag-check-label {
 .tracking-wider {
   letter-spacing: 0.06em;
 }
+
 
 /* Keep navbar above the backdrop */
 .kh-navbar {

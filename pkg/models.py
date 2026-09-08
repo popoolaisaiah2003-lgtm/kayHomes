@@ -15,6 +15,8 @@ class User(db.Model):
     user_phone = db.Column(db.String(20))
     user_avatar = db.Column(db.String(255), nullable=True)
     user_verified = db.Column(db.Boolean, nullable=False, default=False)
+    email_verification_token_hash = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    email_verification_expires_at = db.Column(db.DateTime, nullable=True)
     theme = db.Column(db.String(20), nullable=False, default='light')
     user_regdate = db.Column(db.DateTime)
 

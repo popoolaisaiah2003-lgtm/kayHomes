@@ -1,10 +1,11 @@
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask import Flask, render_template
 from flask_mail import Mail
+from flask_migrate import Migrate
 from pkg.models import db
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
@@ -49,6 +50,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['AVATAR_UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
+migrate = Migrate(app, db)
 mail = Mail(app)
 
 
@@ -1063,6 +1065,8 @@ def ensure_startup_schema_compatibility():
             alter_statements = [
                 ('users', 'user_avatar', 'ALTER TABLE users ADD COLUMN user_avatar VARCHAR(255) NULL'),
                 ('users', 'user_verified', 'ALTER TABLE users ADD COLUMN user_verified TINYINT(1) NOT NULL DEFAULT 0'),
+                ('users', 'email_verification_token_hash', 'ALTER TABLE users ADD COLUMN email_verification_token_hash VARCHAR(64) NULL'),
+                ('users', 'email_verification_expires_at', 'ALTER TABLE users ADD COLUMN email_verification_expires_at DATETIME NULL'),
                 ('property', 'prop_status', "ALTER TABLE property ADD COLUMN prop_status VARCHAR(20) NOT NULL DEFAULT 'available'"),
                 ('favorites', 'created_at', 'ALTER TABLE favorites ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP'),
             ]

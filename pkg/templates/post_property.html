@@ -8,7 +8,7 @@
     <div class="col-md-8">
       <div class="property-form-shell fade-up">
       <h3 class="mb-4">{{ 'Edit Property' if property_data else 'Post a Property' }}</h3>
-      <form id="propertyForm" method="post" enctype="multipart/form-data" action="{{ url_for('post_property', property_id=property_data.prop_id) if property_data else url_for('post_property') }}">
+      <form data-persist-form="post-property" id="propertyForm" method="post" enctype="multipart/form-data" action="{{ url_for('post_property', property_id=property_data.prop_id) if property_data else url_for('post_property') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
         <div class="mb-3">

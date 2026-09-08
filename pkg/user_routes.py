@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from pkg import app, ensure_category_schema_compatibility, ensure_property_reviews_table, ensure_state_lga_seed_data, format_naira, mail
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
 from pkg.models import Category, ContactMessage, Favorite, Notification, PasswordResetToken, PropertyReview, SavedSearch, db, User, Property
-import os, secrets, time
+import os, secrets, time, hashlib
 import re
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func, cast, Float
@@ -148,6 +148,25 @@ def _send_password_reset_email(user, token):
         body=f"Hello {user.user_fname},\n\nTo reset your password, visit the following link:\n{reset_url}\n\nIf you did not make this request, please ignore this email.\n"
     )
     mail.send(msg)
+
+def _send_email_verification(user, token):
+    verification_url = url_for('verify_email', token=token, _external=True)
+    msg = Message(
+        subject='Verify your KayHomes email address',
+        recipients=[user.user_email],
+        body=(
+            f"Hello {user.user_fname},\n\n"
+            "Thanks for creating a KayHomes account. Please verify your email address by opening this link:\n"
+            f"{verification_url}\n\n"
+            "This verification link expires in 24 hours. If you did not create this account, you can ignore this email.\n"
+        )
+    )
+    mail.send(msg)
+
+
+def _hash_verification_token(token):
+    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+
 
 
 def get_table_columns(table_name):
@@ -533,6 +552,7 @@ def _serialize_message_row(row, current_user_id):
         'receiver_id': row['receiver_id'],
         'message': row['message'],
         'created_at': _format_message_timestamp(row.get('created_at')),
+        'created_at_iso': row.get('created_at').isoformat() + 'Z' if hasattr(row.get('created_at'), 'isoformat') else None,
         'is_sender': row['sender_id'] == current_user_id,
     }
 
@@ -556,6 +576,7 @@ def _serialize_notification(item):
         'link': item.link,
         'is_read': bool(item.is_read),
         'created_at_display': _format_notification_timestamp(item.created_at),
+        'created_at_iso': item.created_at.isoformat() + 'Z' if hasattr(item.created_at, 'isoformat') else None,
     }
 
 
@@ -754,6 +775,7 @@ def _serialize_saved_search(saved_search):
         'furnished': saved_search.furnished,
         'sort': saved_search.sort,
         'created_at_display': created_at_display,
+        'created_at_iso': created_at.isoformat() + 'Z' if hasattr(created_at, 'isoformat') else None,
         'run_url': url_for('run_saved_search', search_id=saved_search.search_id),
         'delete_url': url_for('delete_saved_search', search_id=saved_search.search_id),
         'properties_url': url_for('properties', **params),
@@ -3418,52 +3440,149 @@ def messages():
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
-
     if session.get('user_id'):
         return _authenticated_entry_redirect()
 
-    if request.method == 'POST':
+    form_data = {
+        'fname': '',
+        'lname': '',
+        'email': '',
+        'phone': '',
+    }
 
+    if request.method == 'POST':
         csrf_error = _validate_csrf_request('register')
         if csrf_error:
             return csrf_error
 
-        fname = request.form.get('fname')
-        lname = request.form.get('lname')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        form_data.update({
+            'fname': (request.form.get('fname') or '').strip(),
+            'lname': (request.form.get('lname') or '').strip(),
+            'email': (request.form.get('email') or '').strip().lower(),
+            'phone': (request.form.get('phone') or '').strip(),
+        })
+        password = request.form.get('password') or ''
+        confirm_password = request.form.get('confirm_password') or ''
+
+        if not form_data['fname'] or not form_data['lname']:
+            flash('Please provide your first and last name.', 'warning')
+            return render_template('register.html', title='Register', form_data=form_data), 400
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'warning')
+            return render_template('register.html', title='Register', form_data=form_data), 400
 
         if password != confirm_password:
-            flash('Passwords do not match', 'danger')
-            return redirect(url_for('register'))
+            flash('Passwords do not match.', 'danger')
+            return render_template('register.html', title='Register', form_data=form_data), 400
 
-        existing_user = User.query.filter_by(
-            user_email=email
-        ).first()
+        try:
+            validated_email = validate_email(form_data['email'], check_deliverability=True)
+            form_data['email'] = validated_email.normalized
+        except EmailNotValidError as exc:
+            flash(f'Please enter a valid, deliverable email address: {exc}', 'warning')
+            return render_template('register.html', title='Register', form_data=form_data), 400
 
+        existing_user = User.query.filter(func.lower(User.user_email) == form_data['email'].lower()).first()
         if existing_user:
-            flash('Email already exists', 'warning')
-            return redirect(url_for('register'))
+            flash('An account with that email already exists.', 'warning')
+            return render_template('register.html', title='Register', form_data=form_data), 409
 
-        password_hash = generate_password_hash(password)
-
+        verification_token = secrets.token_urlsafe(48)
         new_user = User(
-            user_fname=fname,
-            user_lname=lname,
-            user_email=email,
-            user_phone=phone,
-            user_pwd=password_hash
+            user_fname=form_data['fname'],
+            user_lname=form_data['lname'],
+            user_email=form_data['email'],
+            user_phone=form_data['phone'],
+            user_pwd=generate_password_hash(password),
+            user_verified=False,
+            email_verification_token_hash=_hash_verification_token(verification_token),
+            email_verification_expires_at=datetime.utcnow() + timedelta(hours=24),
+            user_regdate=datetime.utcnow(),
         )
 
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            app.logger.exception('Registration failed for email %s', form_data['email'])
+            flash('Unable to create your account right now. Please try again.', 'danger')
+            return render_template('register.html', title='Register', form_data=form_data), 500
 
-        flash('Registration successful! Please log in to continue.', 'success')
+        try:
+            _send_email_verification(new_user, verification_token)
+        except Exception:
+            app.logger.exception('Verification email could not be sent for user %s', new_user.user_id)
+            flash('Your account was created, but we could not send the verification email. Please use the resend option after checking your email settings.', 'warning')
+            return redirect(url_for('login'))
+
+        flash('Account created. Please check your email and verify your address before logging in.', 'success')
         return redirect(url_for('login'))
 
-    return render_template('register.html', title='Register')
+    return render_template('register.html', title='Register', form_data=form_data)
+
+
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    token_hash = _hash_verification_token(token or '')
+    user = User.query.filter_by(email_verification_token_hash=token_hash).first()
+
+    if not user:
+        flash('This verification link is invalid or has already been used.', 'danger')
+        return redirect(url_for('login'))
+
+    if user.email_verification_expires_at and user.email_verification_expires_at < datetime.utcnow():
+        flash('This verification link has expired. Please request a new verification email.', 'warning')
+        return redirect(url_for('resend_verification'))
+
+    try:
+        user.user_verified = True
+        user.email_verification_token_hash = None
+        user.email_verification_expires_at = None
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('Email verification failed for user %s', user.user_id)
+        flash('Unable to verify your email right now. Please try again.', 'danger')
+        return redirect(url_for('login'))
+
+    flash('Email verified successfully. You can now log in.', 'success')
+    return redirect(url_for('login'))
+
+
+@app.route('/resend-verification', methods=['GET', 'POST'])
+def resend_verification():
+    if request.method == 'POST':
+        csrf_error = _validate_csrf_request('resend_verification')
+        if csrf_error:
+            return csrf_error
+
+        email = (request.form.get('email') or '').strip().lower()
+        try:
+            validated_email = validate_email(email, check_deliverability=False)
+            email = validated_email.normalized
+        except EmailNotValidError:
+            flash('Please enter a valid email address.', 'warning')
+            return render_template('resend_verification.html'), 400
+
+        user = User.query.filter(func.lower(User.user_email) == email.lower()).first()
+        if user and not user.user_verified:
+            token = secrets.token_urlsafe(48)
+            user.email_verification_token_hash = _hash_verification_token(token)
+            user.email_verification_expires_at = datetime.utcnow() + timedelta(hours=24)
+            try:
+                db.session.commit()
+                _send_email_verification(user, token)
+            except Exception:
+                db.session.rollback()
+                app.logger.exception('Verification resend failed for email %s', email)
+
+        # Do not reveal whether an account exists.
+        flash('If an unverified account exists for that email, a new verification link has been sent.', 'info')
+        return redirect(url_for('login'))
+
+    return render_template('resend_verification.html')
 
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -3584,6 +3703,9 @@ def login():
             user.user_pwd,
             password
         ):
+            if not getattr(user, 'user_verified', False) and getattr(user, 'email_verification_token_hash', None):
+                flash('Please verify your email address before logging in.', 'warning')
+                return render_template('login.html', title='Login', login_email=email), 403
 
             session['user_id'] = user.user_id
             session['user_name'] = user.user_fname

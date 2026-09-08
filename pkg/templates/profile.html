@@ -106,7 +106,7 @@
           <div class="mt-4 small text-muted text-start">
             <div class="d-flex justify-content-between py-2 border-bottom">
               <span>Member since</span>
-              <strong>{{ user.user_regdate.strftime('%b %Y') if user.user_regdate else 'Recently joined' }}</strong>
+              <strong><span data-kh-utc="{{ user.user_regdate.isoformat() }}Z">{{ user.user_regdate.strftime('%b %Y') if user.user_regdate else 'Recently joined' }}</span></strong>
             </div>
             <div class="d-flex justify-content-between py-2">
               <span>Phone</span>

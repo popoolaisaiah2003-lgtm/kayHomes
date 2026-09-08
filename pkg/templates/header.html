@@ -73,7 +73,7 @@
                           <div class="fw-semibold small mb-1">{{ item.title }}</div>
                           <div class="text-muted small">{{ item.message }}</div>
                         </div>
-                        <small class="text-muted text-nowrap" style="font-size: 0.75rem;">{{ item.created_at_display }}</small>
+                        <small class="text-muted text-nowrap" style="font-size: 0.75rem;" data-kh-utc="{{ item.created_at_iso }}">{{ item.created_at_display }}</small>
                       </div>
                     </a>
                   {% endfor %}

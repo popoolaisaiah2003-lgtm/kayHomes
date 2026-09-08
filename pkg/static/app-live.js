@@ -8,6 +8,32 @@
     return tokenMeta ? tokenMeta.getAttribute('content') || '' : '';
   }
 
+  function formatLocalTime(value, options) {
+    if (!value) return '';
+    var date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    try {
+      return new Intl.DateTimeFormat(undefined, options || {
+        year: 'numeric', month: 'short', day: '2-digit',
+        hour: 'numeric', minute: '2-digit'
+      }).format(date);
+    } catch (error) {
+      return date.toLocaleString();
+    }
+  }
+
+  function initializeLocalTimes(root) {
+    var scope = root || document;
+    scope.querySelectorAll('[data-kh-utc]').forEach(function (element) {
+      var value = element.getAttribute('data-kh-utc');
+      var formatted = formatLocalTime(value);
+      if (formatted) {
+        element.textContent = formatted;
+        element.setAttribute('title', formatted);
+      }
+    });
+  }
+
   function fetchJson(url, options) {
     var requestOptions = options || {};
     var headers = Object.assign({ Accept: 'application/json' }, requestOptions.headers || {});
@@ -237,7 +263,7 @@
 
     var timestamp = document.createElement('div');
     timestamp.className = 'text-muted small mt-2';
-    timestamp.textContent = message.created_at;
+    timestamp.textContent = formatLocalTime(message.created_at_iso || message.created_at);
 
     bubble.appendChild(body);
     bubble.appendChild(timestamp);
@@ -802,8 +828,94 @@
     });
   }
 
+  function stopAllPollers() {
+    pollers.forEach(function (poller) {
+      poller.stop();
+    });
+    pollers = [];
+  }
+
+  function initializeFormPersistence(root) {
+    var scope = root || document;
+    var forms = scope.querySelectorAll('form[data-persist-form]');
+    if (!forms.length || !window.sessionStorage) {
+      return;
+    }
+
+    forms.forEach(function (form) {
+      var formKey = 'kayhomes:form:' + window.location.pathname + ':' + form.dataset.persistForm;
+      var fields = Array.from(form.elements).filter(function (field) {
+        return field.name && field.type !== 'password' && field.type !== 'file' && field.name !== 'csrf_token';
+      });
+
+      try {
+        var saved = JSON.parse(sessionStorage.getItem(formKey) || '{}');
+        fields.forEach(function (field) {
+          if (Object.prototype.hasOwnProperty.call(saved, field.name)) {
+            if (field.type === 'checkbox' || field.type === 'radio') {
+              field.checked = Boolean(saved[field.name]);
+            } else {
+              field.value = saved[field.name];
+            }
+          }
+        });
+      } catch (error) {
+        console.warn('Unable to restore form state:', error);
+      }
+
+      if (form.dataset.khPersistenceBound === 'true') {
+        return;
+      }
+      form.dataset.khPersistenceBound = 'true';
+
+      function saveFormState() {
+        var state = {};
+        fields.forEach(function (field) {
+          if (field.type === 'checkbox' || field.type === 'radio') {
+            state[field.name] = field.checked;
+          } else {
+            state[field.name] = field.value;
+          }
+        });
+        try {
+          sessionStorage.setItem(formKey, JSON.stringify(state));
+        } catch (error) {
+          console.warn('Unable to persist form state:', error);
+        }
+      }
+
+      fields.forEach(function (field) {
+        field.addEventListener('input', saveFormState);
+        field.addEventListener('change', saveFormState);
+      });
+    });
+  }
+
+  function clearStaleFormPersistence() {
+    if (!window.sessionStorage) {
+      return;
+    }
+    try {
+      Object.keys(sessionStorage).forEach(function (key) {
+        if (!key.startsWith('kayhomes:form:')) {
+          return;
+        }
+        var parts = key.split(':');
+        var storedPath = parts.length >= 3 ? parts[2] : '';
+        if (storedPath && storedPath !== window.location.pathname) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('Unable to clean persisted form state:', error);
+    }
+  }
+
   function initialize() {
     bindFormLoadingStates(document);
+    clearStaleFormPersistence();
+    initializeFormPersistence();
+    initializeLocalTimes();
     initializePasswordToggles();
     initializeUnreadBadge();
     initializeChatPage();
@@ -814,6 +926,9 @@
     initializeProfileStats();
     initializeAdminDashboardStats();
   }
+
+  document.addEventListener('turbo:before-render', stopAllPollers);
+  document.addEventListener('turbo:load', initialize);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);

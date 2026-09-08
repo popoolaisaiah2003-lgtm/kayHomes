@@ -14,7 +14,7 @@
       </div>
 
       <div class="col-lg-6">
-        <form action="{{ url_for('register') }}" method="POST" class="register-form">
+        <form data-persist-form="register" action="{{ url_for('register') }}" method="POST" class="register-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <h2 class="mb-2">Create an Account</h2>
           <p class="text-muted mb-4">Join KayHomes and start discovering premium properties.</p>
@@ -22,22 +22,22 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label for="fname" class="form-label">First Name</label>
-              <input id="fname" type="text" name="fname" class="form-control" required>
+              <input id="fname" type="text" name="fname" class="form-control" value="{{ form_data.fname if form_data else '' }}" required>
             </div>
 
             <div class="col-md-6">
               <label for="lname" class="form-label">Last Name</label>
-              <input id="lname" type="text" name="lname" class="form-control" required>
+              <input id="lname" type="text" name="lname" class="form-control" value="{{ form_data.lname if form_data else '' }}" required>
             </div>
 
             <div class="col-12">
               <label for="email" class="form-label">Email address</label>
-              <input id="email" type="email" name="email" class="form-control" placeholder="Enter your email address" required>
+              <input id="email" type="email" name="email" class="form-control" placeholder="Enter your email address" value="{{ form_data.email if form_data else '' }}" required>
             </div>
 
             <div class="col-12">
               <label for="phone" class="form-label">Phone Number</label>
-              <input id="phone" type="tel" name="phone" class="form-control" placeholder="Enter your phone number">
+              <input id="phone" type="tel" name="phone" class="form-control" placeholder="Enter your phone number" value="{{ form_data.phone if form_data else '' }}">
             </div>
 
             <div class="col-md-6">

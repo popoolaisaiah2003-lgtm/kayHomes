@@ -24,7 +24,7 @@
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                   <div>
                     <h5 class="card-title mb-1 fw-bold">{{ search.name }}</h5>
-                    <p class="text-muted small mb-0">Saved {{ search.created_at_display }}</p>
+                    <p class="text-muted small mb-0">Saved <span data-kh-utc="{{ search.created_at_iso }}">{{ search.created_at_display }}</span></p>
                   </div>
                   <span class="badge bg-light text-dark border">Search</span>
                 </div>

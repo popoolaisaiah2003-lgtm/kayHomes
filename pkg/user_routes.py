@@ -140,8 +140,33 @@ def _properties_page_params(filters, selected_category_id=None, page=None):
     return params
 
 
+def _log_mail_config(context):
+    sender = app.config.get('MAIL_DEFAULT_SENDER')
+    if sender and '@' in sender:
+        local_part, domain = sender.split('@', 1)
+        masked_sender = f"{local_part[:2]}***@{domain}"
+    elif sender:
+        masked_sender = f"{sender[:2]}***" if len(sender) > 2 else '***'
+    else:
+        masked_sender = None
+
+    app.logger.info(
+        "SMTP CONFIG %s: server=%s port=%s tls=%s ssl=%s suppress=%s username_set=%s password_set=%s sender=%s",
+        context,
+        app.config.get('MAIL_SERVER'),
+        app.config.get('MAIL_PORT'),
+        app.config.get('MAIL_USE_TLS'),
+        app.config.get('MAIL_USE_SSL'),
+        app.config.get('MAIL_SUPPRESS_SEND'),
+        bool(app.config.get('MAIL_USERNAME')),
+        bool(app.config.get('MAIL_PASSWORD')),
+        masked_sender,
+    )
+
+
 def _send_password_reset_email(user, token):
     reset_url = url_for('reset_password', token=token, _external=True)
+    _log_mail_config('reset-password-send')
     msg = Message(
         subject='KayHomes Password Reset Request',
         recipients=[user.user_email],
@@ -149,8 +174,10 @@ def _send_password_reset_email(user, token):
     )
     mail.send(msg)
 
+
 def _send_email_verification(user, token):
     verification_url = url_for('verify_email', token=token, _external=True)
+    _log_mail_config('verification-send')
     msg = Message(
         subject='Verify your KayHomes email address',
         recipients=[user.user_email],

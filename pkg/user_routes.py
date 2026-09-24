@@ -7,7 +7,7 @@ from pkg import app, ensure_category_schema_compatibility, ensure_property_revie
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
 from pkg.models import Category, ContactMessage, Favorite, Notification, PasswordResetToken, PropertyReview, SavedSearch, db, User, Property
 import os, secrets, time, hashlib
-import re
+import resend 
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func, cast, Float
 from urllib.parse import quote_plus
@@ -163,33 +163,60 @@ def _log_mail_config(context):
         masked_sender,
     )
 
+def _send_resend_email(to_email, subject, body):
+    api_key = os.environ.get("RESEND_API_KEY")
+
+    if not api_key:
+        raise RuntimeError("RESEND_API_KEY is not configured.")
+
+    resend.api_key = api_key
+
+    params = {
+        "from": "KayHomes <noreply@kaydevs.com>",
+        "to": [to_email],
+        "subject": subject,
+        "html": f"<p>{body.replace(chr(10), '<br>')}</p>",
+    }
+
+    return resend.Emails.send(params)
 
 def _send_password_reset_email(user, token):
     reset_url = url_for('reset_password', token=token, _external=True)
-    _log_mail_config('reset-password-send')
-    msg = Message(
-        subject='KayHomes Password Reset Request',
-        recipients=[user.user_email],
-        body=f"Hello {user.user_fname},\n\nTo reset your password, visit the following link:\n{reset_url}\n\nIf you did not make this request, please ignore this email.\n"
-    )
-    mail.send(msg)
 
+    body = (
+        f"Hello {user.user_fname},\n\n"
+        f"To reset your password, visit the following link:\n"
+        f"{reset_url}\n\n"
+        f"If you did not request a password reset, please ignore this email."
+    )
+
+    return _send_resend_email(
+        user.user_email,
+        "KayHomes Password Reset Request",
+        body
+    )
 
 def _send_email_verification(user, token):
-    verification_url = url_for('verify_email', token=token, _external=True)
-    _log_mail_config('verification-send')
-    msg = Message(
-        subject='Verify your KayHomes email address',
-        recipients=[user.user_email],
-        body=(
-            f"Hello {user.user_fname},\n\n"
-            "Thanks for creating a KayHomes account. Please verify your email address by opening this link:\n"
-            f"{verification_url}\n\n"
-            "This verification link expires in 24 hours. If you did not create this account, you can ignore this email.\n"
-        )
+    verification_url = url_for(
+        'verify_email',
+        token=token,
+        _external=True
     )
-    mail.send(msg)
 
+    body = (
+        f"Hello {user.user_fname},\n\n"
+        f"Thanks for creating a KayHomes account. "
+        f"Please verify your email address using the link below:\n\n"
+        f"{verification_url}\n\n"
+        f"This verification link expires in 24 hours. "
+        f"If you did not create a KayHomes account, you can ignore this email."
+    )
+
+    return _send_resend_email(
+        user.user_email,
+        "Verify your KayHomes email address",
+        body
+    )
 
 def _hash_verification_token(token):
     return hashlib.sha256(token.encode('utf-8')).hexdigest()

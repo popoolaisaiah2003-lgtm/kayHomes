@@ -6,6 +6,7 @@ from pkg import app, ensure_category_schema_compatibility, ensure_property_revie
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
 from pkg.models import Category, ContactMessage, Favorite, Notification, PasswordResetToken, PropertyReview, SavedSearch, db, User, Property
 import os, secrets, time, hashlib
+import re
 import resend 
 from werkzeug.utils import secure_filename
 from sqlalchemy import text, inspect, or_, func, cast, Float

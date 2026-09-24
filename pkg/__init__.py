@@ -6,7 +6,6 @@ import cloudinary.api
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from flask import Flask, render_template
-from flask_mail import Mail
 from flask_migrate import Migrate
 from pkg.models import db
 from sqlalchemy import inspect, text
@@ -34,14 +33,6 @@ app.logger.setLevel(logging.INFO)
 
 app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
-app.config.setdefault('MAIL_SERVER', '127.0.0.1')
-app.config.setdefault('MAIL_PORT', 25)
-app.config.setdefault('MAIL_USE_TLS', False)
-app.config.setdefault('MAIL_USE_SSL', False)
-app.config.setdefault('MAIL_USERNAME', None)
-app.config.setdefault('MAIL_PASSWORD', None)
-app.config.setdefault('MAIL_DEFAULT_SENDER', 'noreply@kayhomes.local')
-
 # Uploads
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -54,35 +45,6 @@ os.makedirs(app.config['AVATAR_UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 migrate = Migrate(app, db)
-mail = Mail(app)
-
-
-def _mask_sender(sender):
-    if not sender:
-        return None
-    if '@' in sender:
-        local_part, domain = sender.split('@', 1)
-        local_prefix = local_part[:2]
-        return f"{local_prefix}***@{domain}"
-    return f"{sender[:2]}***" if len(sender) > 2 else "***"
-
-
-def _log_mail_config(context):
-    app.logger.info(
-        "SMTP CONFIG %s: server=%s port=%s tls=%s ssl=%s suppress=%s username_set=%s password_set=%s sender=%s",
-        context,
-        app.config.get("MAIL_SERVER"),
-        app.config.get("MAIL_PORT"),
-        app.config.get("MAIL_USE_TLS"),
-        app.config.get("MAIL_USE_SSL"),
-        app.config.get("MAIL_SUPPRESS_SEND"),
-        bool(app.config.get("MAIL_USERNAME")),
-        bool(app.config.get("MAIL_PASSWORD")),
-        _mask_sender(app.config.get("MAIL_DEFAULT_SENDER")),
-    )
-
-
-_log_mail_config('startup')
 
 
 def format_naira(value):

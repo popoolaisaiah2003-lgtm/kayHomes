@@ -1,9 +1,8 @@
 import cloudinary
 import cloudinary.uploader
 from flask import render_template, request, redirect, url_for, session, flash, abort, jsonify
-from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from pkg import app, ensure_category_schema_compatibility, ensure_property_reviews_table, ensure_state_lga_seed_data, format_naira, mail
+from pkg import app, ensure_category_schema_compatibility, ensure_property_reviews_table, ensure_state_lga_seed_data, format_naira
 from pkg.forms import ForgotPasswordForm, ResetPasswordForm
 from pkg.models import Category, ContactMessage, Favorite, Notification, PasswordResetToken, PropertyReview, SavedSearch, db, User, Property
 import os, secrets, time, hashlib
@@ -139,29 +138,6 @@ def _properties_page_params(filters, selected_category_id=None, page=None):
         params['page'] = page
     return params
 
-
-def _log_mail_config(context):
-    sender = app.config.get('MAIL_DEFAULT_SENDER')
-    if sender and '@' in sender:
-        local_part, domain = sender.split('@', 1)
-        masked_sender = f"{local_part[:2]}***@{domain}"
-    elif sender:
-        masked_sender = f"{sender[:2]}***" if len(sender) > 2 else '***'
-    else:
-        masked_sender = None
-
-    app.logger.info(
-        "SMTP CONFIG %s: server=%s port=%s tls=%s ssl=%s suppress=%s username_set=%s password_set=%s sender=%s",
-        context,
-        app.config.get('MAIL_SERVER'),
-        app.config.get('MAIL_PORT'),
-        app.config.get('MAIL_USE_TLS'),
-        app.config.get('MAIL_USE_SSL'),
-        app.config.get('MAIL_SUPPRESS_SEND'),
-        bool(app.config.get('MAIL_USERNAME')),
-        bool(app.config.get('MAIL_PASSWORD')),
-        masked_sender,
-    )
 
 def _send_resend_email(to_email, subject, body):
     api_key = os.environ.get("RESEND_API_KEY")
@@ -3680,14 +3656,7 @@ def forgot_password():
             flash(generic_message, 'info')
         except Exception as e:
             app.logger.exception('Forgot password email send failed for email %s: %s', email, e)
-
-            # Keep development unblocked even when SMTP is not configured.
-            if app.config.get('MAIL_SUPPRESS_SEND'):
-                reset_link = url_for('reset_password', token=token_value, _external=True)
-                app.logger.info('Password reset link for %s: %s', email, reset_link)
-                flash(generic_message, 'info')
-            else:
-                flash('Unable to send reset email right now. Please try again later.', 'danger')
+            flash('Unable to send reset email right now. Please try again later.', 'danger')
 
         return redirect(url_for('forgot_password'))
 

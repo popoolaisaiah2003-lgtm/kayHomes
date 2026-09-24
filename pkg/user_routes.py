@@ -148,8 +148,9 @@ def _send_resend_email(to_email, subject, body):
     resend.api_key = api_key
 
     params = {
-        "from": "KayHomes <noreply@kaydevs.com>",
+        "from": "KayHomes <hello@kaydevs.com>",
         "to": [to_email],
+        "reply_to": ["kaydevs.com@gmail.com"],
         "subject": subject,
         "html": f"<p>{body.replace(chr(10), '<br>')}</p>",
     }

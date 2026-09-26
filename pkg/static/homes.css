@@ -1564,6 +1564,22 @@ textarea:focus-visible {
   font-size: 1rem;
 }
 
+.description-collapsed {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  max-height: calc(1.7em * 6);
+}
+
+.description-collapsed.description-expanded {
+  display: block;
+  max-height: none;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
 /* Reviews and Rating System Styling */
 .star-select-label {
   cursor: pointer;

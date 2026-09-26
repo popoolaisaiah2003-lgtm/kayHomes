@@ -102,7 +102,14 @@
           <!-- Description Section Card -->
           <div class="details-content-card">
             <h5 class="fw-bold mb-3"><i class="bi bi-card-text text-primary me-2"></i>Overview & Description</h5>
-            <p id="propertyDetailDescription" class="description-text mb-0">{{ property['prop_desc'] }}</p>
+            <p id="propertyDetailDescription" class="description-text description-collapsed mb-0">{{ property['prop_desc'] }}</p>
+            <button
+              id="propertyDescriptionToggle"
+              type="button"
+              class="btn btn-link px-0 mt-2 d-none"
+              aria-controls="propertyDetailDescription"
+              aria-expanded="false"
+            >Show more</button>
           </div>
 
           <!-- Address & Location Section Card -->

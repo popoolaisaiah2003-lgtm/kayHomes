@@ -595,9 +595,47 @@
     var price = document.getElementById('propertyDetailPrice');
     var location = document.getElementById('propertyDetailLocation');
     var description = document.getElementById('propertyDetailDescription');
+    var descriptionToggle = document.getElementById('propertyDescriptionToggle');
     var address = document.getElementById('propertyDetailAddress');
     var favoriteButton = document.getElementById('favoriteToggle');
     var placeholderImage = detail.dataset.placeholderImage || '';
+
+    function syncDescriptionToggle() {
+      if (!description || !descriptionToggle) {
+        return;
+      }
+
+      var isExpanded = description.classList.contains('description-expanded');
+      description.classList.remove('description-expanded');
+      description.classList.add('description-collapsed');
+      var isOverflowing = description.scrollHeight > description.clientHeight + 1;
+
+      if (!isOverflowing) {
+        descriptionToggle.classList.add('d-none');
+        descriptionToggle.setAttribute('aria-expanded', 'false');
+        descriptionToggle.textContent = 'Show more';
+        return;
+      }
+
+      if (isExpanded) {
+        description.classList.add('description-expanded');
+        description.classList.remove('description-collapsed');
+      }
+      descriptionToggle.classList.remove('d-none');
+      descriptionToggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+      descriptionToggle.textContent = isExpanded ? 'Show less' : 'Show more';
+    }
+
+    if (descriptionToggle && description) {
+      descriptionToggle.addEventListener('click', function () {
+        var isExpanded = description.classList.toggle('description-expanded');
+        description.classList.toggle('description-collapsed', !isExpanded);
+        descriptionToggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+        descriptionToggle.textContent = isExpanded ? 'Show less' : 'Show more';
+      });
+      syncDescriptionToggle();
+      window.addEventListener('resize', syncDescriptionToggle);
+    }
 
     function bindGalleryThumbs() {
       if (!gallery || !mainImage) {
@@ -673,6 +711,7 @@
         }
         if (description) {
           description.textContent = payload.prop_desc || '';
+          syncDescriptionToggle();
         }
         if (address) {
           address.textContent = payload.prop_address || '';

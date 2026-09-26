@@ -3,7 +3,7 @@
 from alembic import op
 import sqlalchemy as sa
 
-revision = '20260924_property_description_utf8mb4'
+revision = '20260926_prop_desc_utf8mb4'
 down_revision = '20260908_email_verification'
 branch_labels = None
 depends_on = None
